@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "61168774453",
+    "project_id": "prestamo-equipos-36c3c",
+    "storage_bucket": "prestamo-equipos-36c3c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:61168774453:android:4bbf36b865c32122e3707c",
+        "android_client_info": {
+          "package_name": "com.example.prestamo_equipos"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD2NE4IOi6lbhLYOLdbDOUfCdle32B7H58"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:61168774453:android:065aea22523a5976e3707c",
+        "android_client_info": {
+          "package_name": "com.prestamoequipos"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD2NE4IOi6lbhLYOLdbDOUfCdle32B7H58"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

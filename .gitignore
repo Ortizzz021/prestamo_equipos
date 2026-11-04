@@ -43,3 +43,11 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Claves privadas y credenciales de servicio: nunca versionar.
+*.jks
+*.keystore
+service-account*.json
+firebase-adminsdk*.json
+# Configuración Firebase de cliente (google-services.json / firebase_options.dart)
+# sí se versiona; no contiene claves privadas de servidor.

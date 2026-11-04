@@ -1,10 +1,32 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'app.dart';
+import 'firebase_options.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // La inicialización de Firebase y Crashlytics se agrega en el commit de
-  // configuración de Firebase.
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Crashlytics se mantiene silenciado en debug para no reportar pruebas locales.
+  await FirebaseCrashlytics.instance
+      .setCrashlyticsCollectionEnabled(!kDebugMode);
+
+  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+  PlatformDispatcher.instance.onError = (error, stack) {
+    FirebaseCrashlytics.instance.recordError(
+      error.runtimeType,
+      stack,
+      reason: 'Excepción asíncrona no controlada',
+      fatal: true,
+    );
+    return true;
+  };
+
   runApp(const PrestamoEquiposApp());
 }
