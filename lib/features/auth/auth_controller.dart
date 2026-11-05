@@ -14,12 +14,14 @@ class AuthController extends ChangeNotifier {
     _perfilSubscription = _repository.perfilActual().listen(
       (perfil) {
         _perfil = perfil;
+        _sesionResuelta = true;
         _notifyIfAlive();
       },
       onError: (Object error) {
         _mensajeError = error is AuthException
             ? error.mensaje
             : 'No fue posible cargar el perfil. Inténtalo de nuevo';
+        _sesionResuelta = true;
         _notifyIfAlive();
       },
     );
@@ -29,12 +31,24 @@ class AuthController extends ChangeNotifier {
   late final StreamSubscription<Perfil?> _perfilSubscription;
   bool _cargando = false;
   bool _disposed = false;
+  bool _sesionResuelta = false;
   Perfil? _perfil;
   String? _mensajeError;
 
   bool get cargando => _cargando;
   Perfil? get perfil => _perfil;
   String? get mensajeError => _mensajeError;
+
+  /// `false` mientras se restaura la sesión guardada al abrir la app
+  /// (todavía no llega el primer valor de [AuthRepository.perfilActual]).
+  bool get sesionResuelta => _sesionResuelta;
+
+  /// Borra el mensaje de error al cambiar de pantalla (login ↔ registro).
+  void limpiarError() {
+    if (_mensajeError == null) return;
+    _mensajeError = null;
+    _notifyIfAlive();
+  }
 
   Future<void> registrar({
     required String nombre,

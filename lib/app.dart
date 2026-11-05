@@ -1,27 +1,25 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'core/theme/app_theme.dart';
 import 'data/repositories/auth_repository.dart';
 import 'features/auth/auth_controller.dart';
-import 'core/theme/app_theme.dart';
+import 'features/auth/auth_gate.dart';
 
 class PrestamoEquiposApp extends StatelessWidget {
-  const PrestamoEquiposApp({super.key});
+  /// El repositorio se recibe desde `main` (con Firebase real) o desde las
+  /// pruebas (con un repositorio falso), así la app no depende de
+  /// `FirebaseAuth.instance` directamente.
+  const PrestamoEquiposApp({super.key, required this.authRepository});
+
+  final AuthRepository authRepository;
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        Provider<AuthRepository>(
-          create: (_) => AuthRepository(
-            auth: FirebaseAuth.instance,
-            db: FirebaseFirestore.instance,
-          ),
-        ),
+        Provider<AuthRepository>.value(value: authRepository),
         ChangeNotifierProvider<AuthController>(
-          lazy: true,
           create: (context) => AuthController(
             repository: context.read<AuthRepository>(),
           ),
@@ -32,28 +30,7 @@ class PrestamoEquiposApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: AppTheme.claro,
         darkTheme: AppTheme.oscuro,
-        // Pantalla temporal: el AuthGate con enrutamiento por rol la reemplaza.
-        home: const _InicioTemporal(),
-      ),
-    );
-  }
-}
-
-class _InicioTemporal extends StatelessWidget {
-  const _InicioTemporal();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Préstamo de Equipos')),
-      body: const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text(
-            'Préstamo de equipos tecnológicos',
-            textAlign: TextAlign.center,
-          ),
-        ),
+        home: const AuthGate(),
       ),
     );
   }

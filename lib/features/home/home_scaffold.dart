@@ -1,0 +1,115 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../domain/models/perfil.dart';
+import '../auth/auth_controller.dart';
+
+/// Opción del menú de inicio de un rol.
+class OpcionInicio {
+  const OpcionInicio({
+    required this.icono,
+    required this.titulo,
+    required this.descripcion,
+    this.onTap,
+  });
+
+  final IconData icono;
+  final String titulo;
+  final String descripcion;
+
+  /// `null` mientras la funcionalidad no esté implementada.
+  final VoidCallback? onTap;
+}
+
+/// Estructura común de los inicios por rol: saludo, rol actual, opciones
+/// propias del rol y cierre de sesión con confirmación.
+class HomeScaffold extends StatelessWidget {
+  const HomeScaffold({
+    super.key,
+    required this.perfil,
+    required this.titulo,
+    required this.opciones,
+  });
+
+  final Perfil perfil;
+  final String titulo;
+  final List<OpcionInicio> opciones;
+
+  Future<void> _confirmarCierre(BuildContext context) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cerrar sesión'),
+        content: const Text('¿Seguro que quieres cerrar tu sesión?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Cerrar sesión'),
+          ),
+        ],
+      ),
+    );
+    if (confirmar != true || !context.mounted) return;
+
+    final auth = context.read<AuthController>();
+    // Volver a la raíz para que el AuthGate muestre el login y no quede
+    // ninguna pantalla del rol anterior en la pila.
+    Navigator.of(context).popUntil((ruta) => ruta.isFirst);
+    await auth.cerrarSesion();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cargando = context.select<AuthController, bool>((a) => a.cargando);
+    final nombre = perfil.nombre.isEmpty ? perfil.email : perfil.nombre;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(titulo),
+        actions: [
+          IconButton(
+            key: const Key('cerrar_sesion'),
+            tooltip: 'Cerrar sesión',
+            icon: const Icon(Icons.logout),
+            onPressed: cargando ? null : () => _confirmarCierre(context),
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(
+            'Hola, $nombre',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Chip(
+              avatar: const Icon(Icons.badge_outlined, size: 18),
+              label: Text('Rol: ${perfil.rol.etiqueta}'),
+            ),
+          ),
+          const SizedBox(height: 16),
+          for (final opcion in opciones)
+            Card(
+              child: ListTile(
+                leading: Icon(opcion.icono),
+                title: Text(opcion.titulo),
+                subtitle: Text(opcion.descripcion),
+                trailing: opcion.onTap == null
+                    ? const Text('Próximamente')
+                    : const Icon(Icons.chevron_right),
+                enabled: opcion.onTap != null,
+                onTap: opcion.onTap,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
