@@ -6,9 +6,7 @@ import '../../core/errors/auth_exception.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../domain/models/perfil.dart';
 
-/// Estado de presentación para las operaciones de autenticación.
 class AuthController extends ChangeNotifier {
-  // Se conserva el nombre público `repository` para la API del controlador.
   // ignore: prefer_initializing_formals
   AuthController({required AuthRepository repository}) : _repository = repository {
     _perfilSubscription = _repository.perfilActual().listen(
@@ -39,11 +37,8 @@ class AuthController extends ChangeNotifier {
   Perfil? get perfil => _perfil;
   String? get mensajeError => _mensajeError;
 
-  /// `false` mientras se restaura la sesión guardada al abrir la app
-  /// (todavía no llega el primer valor de [AuthRepository.perfilActual]).
   bool get sesionResuelta => _sesionResuelta;
 
-  /// Borra el mensaje de error al cambiar de pantalla (login ↔ registro).
   void limpiarError() {
     if (_mensajeError == null) return;
     _mensajeError = null;
@@ -85,7 +80,6 @@ class AuthController extends ChangeNotifier {
     } on AuthException catch (error) {
       _mensajeError = error.mensaje;
     } catch (_) {
-      // No se incluye la excepción original: podría contener datos sensibles.
       _mensajeError = 'Ocurrió un error. Inténtalo de nuevo';
     } finally {
       _cargando = false;

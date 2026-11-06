@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Mensaje de error de autenticación visible sobre el botón principal.
 class MensajeErrorAuth extends StatelessWidget {
   const MensajeErrorAuth({super.key, required this.mensaje});
 
@@ -35,8 +34,6 @@ class MensajeErrorAuth extends StatelessWidget {
   }
 }
 
-/// Botón principal que se deshabilita y muestra un indicador mientras hay
-/// una operación pendiente, para impedir envíos repetidos.
 class BotonCargando extends StatelessWidget {
   const BotonCargando({
     super.key,
@@ -68,7 +65,6 @@ class BotonCargando extends StatelessWidget {
   }
 }
 
-/// Campo de contraseña con botón para mostrar u ocultar el texto.
 class CampoPassword extends StatefulWidget {
   const CampoPassword({
     super.key,

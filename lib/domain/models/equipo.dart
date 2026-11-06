@@ -1,6 +1,3 @@
-/// Equipo del catálogo. Los datos descriptivos vienen del endpoint HTTP; la
-/// disponibilidad operativa (bloqueo, franjas ocupadas) vive en Firestore y
-/// no se deduce de este modelo.
 class Equipo {
   const Equipo({
     required this.id,

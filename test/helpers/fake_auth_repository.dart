@@ -5,27 +5,21 @@ import 'package:prestamo_equipos/data/repositories/auth_repository.dart';
 import 'package:prestamo_equipos/domain/models/perfil.dart';
 import 'package:prestamo_equipos/domain/models/rol.dart';
 
-/// Repositorio de autenticación en memoria para pruebas de widgets, sin
-/// Firebase. Simula la sesión con un stream controlado por la prueba.
 class FakeAuthRepository implements AuthRepository {
   FakeAuthRepository({this.perfilParaLogin});
 
   final _sesion = StreamController<Perfil?>.broadcast();
 
-  /// Perfil que devuelve un inicio de sesión exitoso.
   Perfil? perfilParaLogin;
 
-  /// Si se asigna, el próximo login/registro lanza este error.
   AuthException? errorSiguiente;
 
-  /// Si se asigna, el login queda pendiente hasta completarlo.
   Completer<void>? bloqueo;
 
   int llamadasLogin = 0;
   int llamadasRegistro = 0;
   int llamadasCierre = 0;
 
-  /// Emite el estado inicial de la sesión (como al abrir la app).
   void emitirSesion(Perfil? perfil) => _sesion.add(perfil);
 
   @override

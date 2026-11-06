@@ -16,20 +16,22 @@ Future<void> main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Crashlytics se mantiene silenciado en debug para no reportar pruebas locales.
-  await FirebaseCrashlytics.instance
-      .setCrashlyticsCollectionEnabled(!kDebugMode);
+  if (!kIsWeb) {
+    await FirebaseCrashlytics.instance
+        .setCrashlyticsCollectionEnabled(!kDebugMode);
 
-  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-  PlatformDispatcher.instance.onError = (error, stack) {
-    FirebaseCrashlytics.instance.recordError(
-      error.runtimeType,
-      stack,
-      reason: 'Excepción asíncrona no controlada',
-      fatal: true,
-    );
-    return true;
-  };
+    FlutterError.onError =
+        FirebaseCrashlytics.instance.recordFlutterFatalError;
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(
+        error.runtimeType,
+        stack,
+        reason: 'Excepción asíncrona no controlada',
+        fatal: true,
+      );
+      return true;
+    };
+  }
 
   runApp(
     PrestamoEquiposApp(

@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../../domain/models/perfil.dart';
 import '../auth/auth_controller.dart';
 
-/// Opción del menú de inicio de un rol.
 class OpcionInicio {
   const OpcionInicio({
     required this.icono,
@@ -17,12 +16,9 @@ class OpcionInicio {
   final String titulo;
   final String descripcion;
 
-  /// `null` mientras la funcionalidad no esté implementada.
   final VoidCallback? onTap;
 }
 
-/// Estructura común de los inicios por rol: saludo, rol actual, opciones
-/// propias del rol y cierre de sesión con confirmación.
 class HomeScaffold extends StatelessWidget {
   const HomeScaffold({
     super.key,
@@ -56,8 +52,6 @@ class HomeScaffold extends StatelessWidget {
     if (confirmar != true || !context.mounted) return;
 
     final auth = context.read<AuthController>();
-    // Volver a la raíz para que el AuthGate muestre el login y no quede
-    // ninguna pantalla del rol anterior en la pila.
     Navigator.of(context).popUntil((ruta) => ruta.isFirst);
     await auth.cerrarSesion();
   }

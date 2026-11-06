@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Tema de la aplicación (claro y oscuro) a partir de un único color base.
 abstract final class AppTheme {
   static const Color _semilla = Color(0xFF1565C0);
 

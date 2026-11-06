@@ -7,9 +7,6 @@ import 'features/auth/auth_controller.dart';
 import 'features/auth/auth_gate.dart';
 
 class PrestamoEquiposApp extends StatelessWidget {
-  /// El repositorio se recibe desde `main` (con Firebase real) o desde las
-  /// pruebas (con un repositorio falso), así la app no depende de
-  /// `FirebaseAuth.instance` directamente.
   const PrestamoEquiposApp({super.key, required this.authRepository});
 
   final AuthRepository authRepository;

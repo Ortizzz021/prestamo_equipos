@@ -21,8 +21,6 @@ void main() {
   setUp(() => repo = FakeAuthRepository());
   tearDown(() => repo.close());
 
-  /// Abre la app y emite la sesión guardada [sesion] (null = sin sesión).
-  /// Con [restaurar] en false no se emite nada: la sesión sigue cargando.
   Future<void> abrirApp(
     WidgetTester tester, {
     Perfil? sesion,
@@ -107,7 +105,6 @@ void main() {
 
     await tester.tap(find.byKey(const Key('login_enviar')));
     await tester.pump();
-    // Botón deshabilitado con indicador de carga.
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
     await tester.tap(find.byKey(const Key('login_enviar')));
     await tester.pump();

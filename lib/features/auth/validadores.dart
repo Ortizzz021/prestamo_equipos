@@ -1,12 +1,6 @@
-/// Validaciones de formulario de autenticación. Devuelven `null` si el valor
-/// es válido o un mensaje para mostrar bajo el campo.
-///
-/// Se validan en el cliente para dar respuesta inmediata; Firebase vuelve a
-/// validar y sus errores se traducen en [AuthException].
 abstract final class Validadores {
   static final RegExp _email = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]{2,}$');
 
-  /// Firebase Authentication exige al menos 6 caracteres.
   static const int longitudMinimaPassword = 6;
 
   static String? email(String? valor) {

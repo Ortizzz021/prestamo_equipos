@@ -5,7 +5,6 @@ import '../../core/errors/auth_exception.dart';
 import '../../domain/models/perfil.dart';
 import '../../domain/models/rol.dart';
 
-/// Coordina Firebase Authentication y el perfil en Cloud Firestore.
 class AuthRepository {
   AuthRepository({required FirebaseAuth auth, required FirebaseFirestore db})
     : this._internal(auth, db);
@@ -74,8 +73,6 @@ class AuthRepository {
 
   Future<void> cerrarSesion() => _auth.signOut();
 
-  /// Emite el perfil de la sesión actual y vuelve a leerlo ante cambios remotos.
-  /// Si el documento falta o tiene rol desconocido, asigna el rol solicitante.
   Stream<Perfil?> perfilActual() {
     return _auth.authStateChanges().asyncExpand((user) {
       if (user == null) return Stream<Perfil?>.value(null);

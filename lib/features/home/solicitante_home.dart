@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../domain/models/perfil.dart';
 import 'home_scaffold.dart';
 
-/// Inicio del rol Solicitante: consulta equipos y gestiona sus solicitudes.
 class SolicitanteHome extends StatelessWidget {
   const SolicitanteHome({super.key, required this.perfil});
 

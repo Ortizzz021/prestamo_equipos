@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../domain/models/perfil.dart';
 import 'home_scaffold.dart';
 
-/// Inicio del rol Coordinador: aprueba o rechaza solicitudes y bloquea equipos.
 class CoordinadorHome extends StatelessWidget {
   const CoordinadorHome({super.key, required this.perfil});
 

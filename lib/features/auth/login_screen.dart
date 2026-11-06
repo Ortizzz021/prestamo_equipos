@@ -6,10 +6,6 @@ import 'registro_screen.dart';
 import 'validadores.dart';
 import 'widgets/auth_widgets.dart';
 
-/// Inicio de sesión con correo y contraseña.
-///
-/// No navega por sí misma al terminar: el [AuthGate] escucha el perfil del
-/// [AuthController] y muestra la pantalla del rol correspondiente.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -31,8 +27,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _enviar() async {
     final auth = context.read<AuthController>();
-    // El controlador ya ignora llamadas repetidas; esta guarda evita además
-    // validar el formulario mientras hay una operación en curso.
     if (auth.cargando) return;
     FocusScope.of(context).unfocus();
     if (!(_formKey.currentState?.validate() ?? false)) return;

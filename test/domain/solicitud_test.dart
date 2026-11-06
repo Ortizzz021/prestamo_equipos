@@ -220,15 +220,14 @@ void main() {
 
   group('Estado de sincronización', () {
     test('solo se confirma la versión que se envió', () {
-      final enviada = nueva(); // versión 1 enviada a Firestore
+      final enviada = nueva();
       final editada = enviada.transicionar(
         destino: EstadoSolicitud.cancelado,
         rol: Rol.solicitante,
         actorUid: solicitante,
         ahora: ahora,
-      ); // versión 2 local, aún sin enviar
+      );
 
-      // Llega la confirmación del envío de la versión 1.
       expect(editada.confirmarSync(1).estadoSync, EstadoSync.pendiente);
       expect(editada.confirmarSync(2).estadoSync, EstadoSync.sincronizado);
     });

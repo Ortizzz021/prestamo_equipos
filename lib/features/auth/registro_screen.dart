@@ -5,8 +5,6 @@ import 'auth_controller.dart';
 import 'validadores.dart';
 import 'widgets/auth_widgets.dart';
 
-/// Registro de una cuenta nueva. El rol NO se puede escoger: el repositorio
-/// siempre crea el perfil como solicitante.
 class RegistroScreen extends StatefulWidget {
   const RegistroScreen({super.key});
 
@@ -42,11 +40,8 @@ class _RegistroScreenState extends State<RegistroScreen> {
       password: _password.text,
     );
 
-    // La pantalla pudo cerrarse mientras esperábamos a Firebase.
     if (!mounted) return;
     if (auth.mensajeError == null && auth.perfil != null) {
-      // Con la sesión abierta, el AuthGate (ruta raíz) ya muestra el inicio
-      // del rol; se retira esta pantalla para no dejarla encima.
       Navigator.of(context).popUntil((ruta) => ruta.isFirst);
     }
   }
@@ -57,7 +52,6 @@ class _RegistroScreenState extends State<RegistroScreen> {
     final error = auth.mensajeError;
 
     return PopScope(
-      // No permitir salir con una operación pendiente.
       canPop: !auth.cargando,
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) auth.limpiarError();

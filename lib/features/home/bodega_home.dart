@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../domain/models/perfil.dart';
 import 'home_scaffold.dart';
 
-/// Inicio del rol Encargado de bodega: registra entregas y devoluciones.
 class BodegaHome extends StatelessWidget {
   const BodegaHome({super.key, required this.perfil});
 

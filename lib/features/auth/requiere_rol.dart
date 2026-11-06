@@ -4,13 +4,6 @@ import 'package:provider/provider.dart';
 import '../../domain/models/rol.dart';
 import 'auth_controller.dart';
 
-/// Protege una pantalla restringida: solo construye [child] si el perfil
-/// actual tiene uno de los [roles] permitidos. En otro caso muestra un aviso
-/// de acceso denegado en lugar de la función.
-///
-/// Envolver con este widget cada pantalla propia de un rol (bandeja de
-/// coordinación, registro de bodega...) evita que se abra por una ruta
-/// equivocada. No reemplaza las reglas de Firestore.
 class RequiereRol extends StatelessWidget {
   const RequiereRol({super.key, required this.roles, required this.child});
 

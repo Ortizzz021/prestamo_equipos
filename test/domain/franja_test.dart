@@ -3,7 +3,6 @@ import 'package:prestamo_equipos/core/errors/regla_negocio_exception.dart';
 import 'package:prestamo_equipos/domain/models/franja.dart';
 
 void main() {
-  // Miércoles 4 de noviembre de 2026, 11:00 a. m.
   final ahora = DateTime(2026, 11, 4, 11);
 
   Matcher reglaConCodigo(String codigo) => throwsA(

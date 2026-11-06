@@ -1,9 +1,5 @@
 import 'rol.dart';
 
-/// Perfil público asociado a un usuario autenticado.
-///
-/// No contiene contraseñas ni tokens. Los roles privilegiados se asignan
-/// administrativamente en Firestore, no durante el registro.
 class Perfil {
   const Perfil({
     required this.uid,
