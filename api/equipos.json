@@ -1,0 +1,72 @@
+[
+  {
+    "id": "eq-1",
+    "nombre": "Portátil Lenovo ThinkPad E14",
+    "categoria": "Portátiles",
+    "descripcion": "Intel Core i5, 16 GB RAM, 512 GB SSD. Incluye cargador.",
+    "imagen": "https://placehold.co/600x400/png?text=ThinkPad+E14"
+  },
+  {
+    "id": "eq-2",
+    "nombre": "Portátil Dell Latitude 5440",
+    "categoria": "Portátiles",
+    "descripcion": "Intel Core i7, 16 GB RAM, 512 GB SSD. Incluye cargador y mouse.",
+    "imagen": "https://placehold.co/600x400/png?text=Latitude+5440"
+  },
+  {
+    "id": "eq-3",
+    "nombre": "MacBook Air M2",
+    "categoria": "Portátiles",
+    "descripcion": "Chip M2, 8 GB RAM, 256 GB SSD. Incluye cargador USB-C.",
+    "imagen": "https://placehold.co/600x400/png?text=MacBook+Air"
+  },
+  {
+    "id": "eq-4",
+    "nombre": "iPad 10.ª generación",
+    "categoria": "Tablets",
+    "descripcion": "Pantalla de 10,9 pulgadas, 64 GB. Incluye funda y cargador.",
+    "imagen": "https://placehold.co/600x400/png?text=iPad"
+  },
+  {
+    "id": "eq-5",
+    "nombre": "Samsung Galaxy Tab S9 FE",
+    "categoria": "Tablets",
+    "descripcion": "Pantalla de 10,9 pulgadas, 128 GB, lápiz S Pen incluido.",
+    "imagen": "https://placehold.co/600x400/png?text=Galaxy+Tab"
+  },
+  {
+    "id": "eq-6",
+    "nombre": "Proyector Epson PowerLite X49",
+    "categoria": "Proyectores",
+    "descripcion": "3600 lúmenes, entrada HDMI y VGA. Incluye control remoto.",
+    "imagen": "https://placehold.co/600x400/png?text=Epson+X49"
+  },
+  {
+    "id": "eq-7",
+    "nombre": "Proyector portátil BenQ GV31",
+    "categoria": "Proyectores",
+    "descripcion": "Proyector compacto con batería, Wi-Fi y parlante integrado.",
+    "imagen": "https://placehold.co/600x400/png?text=BenQ+GV31"
+  },
+  {
+    "id": "eq-8",
+    "nombre": "Cámara Canon EOS Rebel T7",
+    "categoria": "Cámaras",
+    "descripcion": "Cámara réflex de 24 MP con lente 18-55 mm y memoria de 64 GB.",
+    "imagen": "https://placehold.co/600x400/png?text=Canon+T7"
+  },
+  {
+    "id": "eq-9",
+    "nombre": "Micrófono Blue Yeti",
+    "categoria": "Audio",
+    "descripcion": "Micrófono USB de condensador con soporte de escritorio.",
+    "imagen": "https://placehold.co/600x400/png?text=Blue+Yeti"
+  },
+  {
+    "id": "eq-10",
+    "nombre": "Audífonos Sony WH-CH720N",
+    "categoria": "Audio",
+    "descripcion": "Audífonos inalámbricos con cancelación de ruido y cable auxiliar.",
+    "imagen": "https://placehold.co/600x400/png?text=Sony+WH-CH720N"
+  }
+]
