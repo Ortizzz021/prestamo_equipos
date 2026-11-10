@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../domain/models/perfil.dart';
 import '../catalogo/catalogo_screen.dart';
+import '../solicitudes/mis_prestamos_screen.dart';
 import 'home_scaffold.dart';
 
 class SolicitanteHome extends StatelessWidget {
@@ -21,10 +22,11 @@ class SolicitanteHome extends StatelessWidget {
           descripcion: 'Consulta los equipos y solicita un préstamo',
           onTap: () => Navigator.of(context).push(CatalogoScreen.ruta()),
         ),
-        const OpcionInicio(
+        OpcionInicio(
           icono: Icons.assignment_outlined,
           titulo: 'Mis préstamos',
-          descripcion: 'Revisa o cancela tus solicitudes',
+          descripcion: 'Revisa el estado de tus solicitudes',
+          onTap: () => Navigator.of(context).push(MisPrestamosScreen.ruta()),
         ),
       ],
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/models/equipo.dart';
+import '../solicitudes/solicitar_prestamo_screen.dart';
 import 'widgets/imagen_equipo.dart';
 
 class DetalleEquipoScreen extends StatelessWidget {
@@ -57,10 +58,13 @@ class DetalleEquipoScreen extends StatelessWidget {
               style: textos.bodySmall,
             ),
             const SizedBox(height: 12),
-            const FilledButton(
-              key: Key('detalle_solicitar'),
-              onPressed: null,
-              child: Text('Solicitar préstamo (próximamente)'),
+            FilledButton.icon(
+              key: const Key('detalle_solicitar'),
+              onPressed: () => Navigator.of(context).push(
+                SolicitarPrestamoScreen.ruta(equipo),
+              ),
+              icon: const Icon(Icons.event_available),
+              label: const Text('Solicitar préstamo'),
             ),
           ],
         ),
