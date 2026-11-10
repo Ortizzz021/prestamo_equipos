@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/models/perfil.dart';
+import '../catalogo/catalogo_screen.dart';
 import 'home_scaffold.dart';
 
 class SolicitanteHome extends StatelessWidget {
@@ -13,13 +14,14 @@ class SolicitanteHome extends StatelessWidget {
     return HomeScaffold(
       perfil: perfil,
       titulo: 'Préstamo de Equipos',
-      opciones: const [
+      opciones: [
         OpcionInicio(
           icono: Icons.devices_other,
           titulo: 'Catálogo de equipos',
           descripcion: 'Consulta los equipos y solicita un préstamo',
+          onTap: () => Navigator.of(context).push(CatalogoScreen.ruta()),
         ),
-        OpcionInicio(
+        const OpcionInicio(
           icono: Icons.assignment_outlined,
           titulo: 'Mis préstamos',
           descripcion: 'Revisa o cancela tus solicitudes',

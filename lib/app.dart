@@ -1,21 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'core/preferences/preferencias_service.dart';
 import 'core/theme/app_theme.dart';
+import 'data/remote/equipo_api_service.dart';
 import 'data/repositories/auth_repository.dart';
+import 'data/repositories/equipo_repository.dart';
 import 'features/auth/auth_controller.dart';
 import 'features/auth/auth_gate.dart';
 
 class PrestamoEquiposApp extends StatelessWidget {
-  const PrestamoEquiposApp({super.key, required this.authRepository});
+  const PrestamoEquiposApp({
+    super.key,
+    required this.authRepository,
+    this.equipoRepository,
+    this.preferencias,
+  });
 
   final AuthRepository authRepository;
+  final EquipoRepository? equipoRepository;
+  final PreferenciasService? preferencias;
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         Provider<AuthRepository>.value(value: authRepository),
+        Provider<EquipoRepository>(
+          create: (_) =>
+              equipoRepository ?? EquipoRepository(api: EquipoApiService()),
+        ),
+        Provider<PreferenciasService>(
+          create: (_) => preferencias ?? PreferenciasService(),
+        ),
         ChangeNotifierProvider<AuthController>(
           create: (context) => AuthController(
             repository: context.read<AuthRepository>(),
