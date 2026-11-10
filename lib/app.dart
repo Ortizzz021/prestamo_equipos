@@ -6,8 +6,10 @@ import 'core/preferences/preferencias_service.dart';
 import 'core/theme/app_theme.dart';
 import 'data/local/app_database.dart';
 import 'data/remote/equipo_api_service.dart';
+import 'data/remote/disponibilidad_remote_data_source.dart';
 import 'data/remote/solicitud_remote_data_source.dart';
 import 'data/repositories/auth_repository.dart';
+import 'data/repositories/disponibilidad_repository.dart';
 import 'data/repositories/equipo_repository.dart';
 import 'data/repositories/solicitud_repository.dart';
 import 'data/sync/sync_service.dart';
@@ -22,6 +24,7 @@ class PrestamoEquiposApp extends StatelessWidget {
     this.preferencias,
     this.solicitudRepository,
     this.syncService,
+    this.disponibilidadRepository,
   });
 
   final AuthRepository authRepository;
@@ -29,6 +32,7 @@ class PrestamoEquiposApp extends StatelessWidget {
   final PreferenciasService? preferencias;
   final SolicitudRepository? solicitudRepository;
   final SyncService? syncService;
+  final DisponibilidadRepository? disponibilidadRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -41,6 +45,15 @@ class PrestamoEquiposApp extends StatelessWidget {
         ),
         Provider<PreferenciasService>(
           create: (_) => preferencias ?? PreferenciasService(),
+        ),
+        Provider<DisponibilidadRepository>(
+          create: (_) =>
+              disponibilidadRepository ??
+              DisponibilidadRepository(
+                remote: DisponibilidadRemoteDataSource(
+                  firestore: FirebaseFirestore.instance,
+                ),
+              ),
         ),
         Provider<SolicitudRepository>(
           create: (_) =>

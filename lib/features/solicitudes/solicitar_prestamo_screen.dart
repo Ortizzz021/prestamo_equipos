@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../core/errors/regla_negocio_exception.dart';
 import '../../core/utils/fechas.dart';
+import '../../data/repositories/disponibilidad_repository.dart';
 import '../../data/repositories/solicitud_repository.dart';
 import '../../data/sync/sync_service.dart';
 import '../../domain/models/equipo.dart';
@@ -38,6 +39,12 @@ class _SolicitarPrestamoScreenState extends State<SolicitarPrestamoScreen> {
   Franja? _franja;
   bool _guardando = false;
   String? _error;
+  DisponibilidadRepository? _disponibilidad;
+  Set<SlotHorario> _slotsOcupados = {};
+  bool _cargandoOcupacion = false;
+  bool _falloVerificacion = false;
+  int _consultaOcupacion = 0;
+  bool _dependenciasLeidas = false;
 
   @override
   void initState() {
@@ -50,6 +57,18 @@ class _SolicitarPrestamoScreenState extends State<SolicitarPrestamoScreen> {
     _diaSeleccionado = _dias.first;
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_dependenciasLeidas) return;
+    _dependenciasLeidas = true;
+    _disponibilidad = Provider.of<DisponibilidadRepository?>(
+      context,
+      listen: false,
+    );
+    _consultarOcupacion(_diaSeleccionado);
+  }
+
   List<Franja> get _franjasDelDia =>
       Franja.disponiblesDelDia(_diaSeleccionado, widget.reloj());
 
@@ -59,6 +78,34 @@ class _SolicitarPrestamoScreenState extends State<SolicitarPrestamoScreen> {
       _franja = null;
       _error = null;
     });
+    _consultarOcupacion(dia);
+  }
+
+  Future<void> _consultarOcupacion(DateTime dia) async {
+    final disponibilidad = _disponibilidad;
+    if (disponibilidad == null) return;
+    final consulta = ++_consultaOcupacion;
+    setState(() {
+      _cargandoOcupacion = true;
+      _falloVerificacion = false;
+      _slotsOcupados = {};
+      _franja = null;
+    });
+    try {
+      final ocupados = await disponibilidad.slotsOcupados(widget.equipo.id, dia);
+      if (!mounted || consulta != _consultaOcupacion) return;
+      setState(() => _slotsOcupados = ocupados);
+    } catch (_) {
+      if (!mounted || consulta != _consultaOcupacion) return;
+      setState(() {
+        _falloVerificacion = true;
+        _slotsOcupados = {};
+      });
+    } finally {
+      if (mounted && consulta == _consultaOcupacion) {
+        setState(() => _cargandoOcupacion = false);
+      }
+    }
   }
 
   Future<void> _guardar() async {
@@ -135,6 +182,16 @@ class _SolicitarPrestamoScreenState extends State<SolicitarPrestamoScreen> {
           const SizedBox(height: 24),
           Text('2. Elige la franja', style: textos.titleMedium),
           const SizedBox(height: 8),
+          if (_falloVerificacion)
+            const Padding(
+              padding: EdgeInsets.only(bottom: 8),
+              child: Text(
+                'No se pudo verificar la ocupación; el coordinador la confirmará',
+                key: Key('franjas_sin_verificar'),
+              ),
+            ),
+          if (_cargandoOcupacion)
+            const LinearProgressIndicator(key: Key('franjas_cargando')),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -142,9 +199,18 @@ class _SolicitarPrestamoScreenState extends State<SolicitarPrestamoScreen> {
               for (final f in franjas)
                 ChoiceChip(
                   key: Key('franja_${f.slot.codigo}'),
-                  label: Text(f.slot.etiqueta),
-                  selected: _franja == f,
-                  onSelected: _guardando
+                  avatar: _slotsOcupados.contains(f.slot)
+                      ? const Icon(Icons.event_busy, size: 18)
+                      : null,
+                  label: Text(
+                    _slotsOcupados.contains(f.slot)
+                        ? '${f.slot.etiqueta} · Ocupada'
+                        : f.slot.etiqueta,
+                  ),
+                  selected: !_slotsOcupados.contains(f.slot) && _franja == f,
+                  onSelected: _guardando ||
+                          _cargandoOcupacion ||
+                          _slotsOcupados.contains(f.slot)
                       ? null
                       : (_) => setState(() {
                           _franja = f;
