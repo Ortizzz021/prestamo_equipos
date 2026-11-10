@@ -7,8 +7,10 @@ import 'core/theme/app_theme.dart';
 import 'data/local/app_database.dart';
 import 'data/remote/equipo_api_service.dart';
 import 'data/remote/disponibilidad_remote_data_source.dart';
+import 'data/remote/coordinacion_remote_data_source.dart';
 import 'data/remote/solicitud_remote_data_source.dart';
 import 'data/repositories/auth_repository.dart';
+import 'data/repositories/coordinacion_repository.dart';
 import 'data/repositories/disponibilidad_repository.dart';
 import 'data/repositories/equipo_repository.dart';
 import 'data/repositories/solicitud_repository.dart';
@@ -25,6 +27,7 @@ class PrestamoEquiposApp extends StatelessWidget {
     this.solicitudRepository,
     this.syncService,
     this.disponibilidadRepository,
+    this.coordinacionRepository,
   });
 
   final AuthRepository authRepository;
@@ -33,6 +36,7 @@ class PrestamoEquiposApp extends StatelessWidget {
   final SolicitudRepository? solicitudRepository;
   final SyncService? syncService;
   final DisponibilidadRepository? disponibilidadRepository;
+  final CoordinacionRepository? coordinacionRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +55,15 @@ class PrestamoEquiposApp extends StatelessWidget {
               disponibilidadRepository ??
               DisponibilidadRepository(
                 remote: DisponibilidadRemoteDataSource(
+                  firestore: FirebaseFirestore.instance,
+                ),
+              ),
+        ),
+        Provider<CoordinacionRepository>(
+          create: (_) =>
+              coordinacionRepository ??
+              CoordinacionRepository(
+                remote: CoordinacionRemoteDataSource(
                   firestore: FirebaseFirestore.instance,
                 ),
               ),

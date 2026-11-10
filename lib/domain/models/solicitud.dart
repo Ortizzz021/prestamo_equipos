@@ -24,6 +24,7 @@ class Solicitud {
     required this.id,
     required this.solicitanteUid,
     required this.equipoId,
+    this.equipoNombre,
     required this.franja,
     required this.estado,
     required this.creadaEn,
@@ -64,6 +65,7 @@ class Solicitud {
   final String id;
   final String solicitanteUid;
   final String equipoId;
+  final String? equipoNombre;
   final Franja franja;
   final EstadoSolicitud estado;
   final DateTime creadaEn;
@@ -129,6 +131,7 @@ class Solicitud {
       id: id,
       solicitanteUid: solicitanteUid,
       equipoId: equipoId,
+      equipoNombre: equipoNombre,
       franja: franja,
       estado: destino,
       creadaEn: creadaEn,
@@ -160,6 +163,7 @@ class Solicitud {
         id: id,
         solicitanteUid: solicitanteUid,
         equipoId: equipoId,
+        equipoNombre: equipoNombre,
         franja: franja,
         estado: estado,
         creadaEn: creadaEn,
