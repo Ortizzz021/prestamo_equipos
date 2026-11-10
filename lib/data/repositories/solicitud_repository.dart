@@ -38,6 +38,76 @@ class SolicitudRepository {
         .map((filas) => filas.map(_aMiSolicitud).toList());
   }
 
+  Future<List<MiSolicitud>> pendientesDeEnvio(String ownerUid) async {
+    final filas = await db.pendientesDe(ownerUid, EstadoSync.pendiente.valor);
+    return filas.map(_aMiSolicitud).toList();
+  }
+
+  Future<bool> confirmarEnvio({
+    required String id,
+    required int versionEnviada,
+    EstadoSolicitud? estadoRemoto,
+  }) async {
+    final filas = await db.actualizarSiVersion(
+      id: id,
+      version: versionEnviada,
+      cambios: SolicitudesCompanion(
+        estadoSync: Value(EstadoSync.sincronizado.valor),
+        ultimoError: const Value(null),
+        estado: estadoRemoto == null
+            ? const Value.absent()
+            : Value(estadoRemoto.valor),
+      ),
+    );
+    return filas > 0;
+  }
+
+  Future<void> registrarFalloTemporal({
+    required String id,
+    required int versionEnviada,
+    required String motivo,
+  }) {
+    return db.actualizarSiVersion(
+      id: id,
+      version: versionEnviada,
+      cambios: SolicitudesCompanion(ultimoError: Value(motivo)),
+    );
+  }
+
+  Future<void> registrarRechazo({
+    required String id,
+    required int versionEnviada,
+    required String motivo,
+  }) {
+    return db.actualizarSiVersion(
+      id: id,
+      version: versionEnviada,
+      cambios: SolicitudesCompanion(
+        estadoSync: Value(EstadoSync.rechazado.valor),
+        ultimoError: Value(motivo),
+      ),
+    );
+  }
+
+  Future<void> volverAIntentar(String id) {
+    return db.actualizarSolicitud(
+      id,
+      SolicitudesCompanion(
+        estadoSync: Value(EstadoSync.pendiente.valor),
+        ultimoError: const Value(null),
+      ),
+    );
+  }
+
+  Future<bool> descartarRechazada({required String id, required String ownerUid}) async {
+    final borradas = await db.eliminarSolicitud(
+      id: id,
+      ownerUid: ownerUid,
+      estadoSync: EstadoSync.rechazado.valor,
+    );
+    return borradas > 0;
+  }
+
   Future<MiSolicitud> crearSolicitud({
     required String ownerUid,
     required Equipo equipo,

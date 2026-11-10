@@ -74,8 +74,8 @@ class FakeAuthRepository implements AuthRepository {
 }
 
 Perfil perfilDePrueba(Rol rol) => Perfil(
-      uid: 'uid-${rol.valor}',
-      nombre: 'Usuario ${rol.etiqueta}',
-      email: '${rol.valor}@prueba.com',
-      rol: rol,
-    );
+  uid: 'uid-${rol.valor}',
+  nombre: 'Usuario ${rol.etiqueta}',
+  email: '${rol.valor}@prueba.com',
+  rol: rol,
+);

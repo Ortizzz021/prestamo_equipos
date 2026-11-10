@@ -76,4 +76,42 @@ class AppDatabase extends _$AppDatabase {
   Future<void> guardarSolicitud(SolicitudesCompanion fila) {
     return into(solicitudes).insertOnConflictUpdate(fila);
   }
+
+  Future<List<SolicitudRow>> pendientesDe(String ownerUid, String estadoPendiente) {
+    return (select(solicitudes)
+          ..where(
+            (s) => s.ownerUid.equals(ownerUid) & s.estadoSync.equals(estadoPendiente),
+          )
+          ..orderBy([(s) => OrderingTerm.asc(s.creadaEn)]))
+        .get();
+  }
+
+  Future<int> actualizarSiVersion({
+    required String id,
+    required int version,
+    required SolicitudesCompanion cambios,
+  }) {
+    return (update(solicitudes)
+          ..where((s) => s.id.equals(id) & s.version.equals(version)))
+        .write(cambios);
+  }
+
+  Future<int> actualizarSolicitud(String id, SolicitudesCompanion cambios) {
+    return (update(solicitudes)..where((s) => s.id.equals(id))).write(cambios);
+  }
+
+  Future<int> eliminarSolicitud({
+    required String id,
+    required String ownerUid,
+    required String estadoSync,
+  }) {
+    return (delete(solicitudes)
+          ..where(
+            (s) =>
+                s.id.equals(id) &
+                s.ownerUid.equals(ownerUid) &
+                s.estadoSync.equals(estadoSync),
+          ))
+        .go();
+  }
 }

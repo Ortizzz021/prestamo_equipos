@@ -14,6 +14,7 @@ import 'package:prestamo_equipos/features/home/solicitante_home.dart';
 import 'package:provider/provider.dart';
 
 import '../../helpers/fake_auth_repository.dart';
+import '../../helpers/fake_sync_service.dart';
 
 void main() {
   late FakeAuthRepository repo;
@@ -26,7 +27,7 @@ void main() {
     Perfil? sesion,
     bool restaurar = true,
   }) async {
-    await tester.pumpWidget(PrestamoEquiposApp(authRepository: repo));
+    await tester.pumpWidget(PrestamoEquiposApp(authRepository: repo, syncService: FakeSyncService()));
     if (restaurar) {
       repo.emitirSesion(sesion);
       await tester.pumpAndSettle();

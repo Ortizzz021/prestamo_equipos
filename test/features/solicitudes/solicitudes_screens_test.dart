@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:prestamo_equipos/data/local/app_database.dart';
 import 'package:prestamo_equipos/data/repositories/auth_repository.dart';
 import 'package:prestamo_equipos/data/repositories/solicitud_repository.dart';
+import 'package:prestamo_equipos/data/sync/sync_service.dart';
 import 'package:prestamo_equipos/domain/models/equipo.dart';
 import 'package:prestamo_equipos/domain/models/rol.dart';
 import 'package:prestamo_equipos/features/auth/auth_controller.dart';
@@ -12,6 +13,7 @@ import 'package:provider/provider.dart';
 
 import '../../helpers/base_en_memoria.dart';
 import '../../helpers/fake_auth_repository.dart';
+import '../../helpers/fake_sync_service.dart';
 
 void main() {
   final ahora = DateTime(2026, 11, 10, 11);
@@ -27,12 +29,14 @@ void main() {
   late SolicitudRepository solicitudes;
   late FakeAuthRepository auth;
   late AuthController authController;
+  late FakeSyncService sync;
 
   setUp(() {
     db = baseEnMemoria();
     solicitudes = SolicitudRepository(db: db, reloj: () => ahora);
     auth = FakeAuthRepository();
     authController = AuthController(repository: auth);
+    sync = FakeSyncService();
   });
 
   tearDown(() async {
@@ -48,6 +52,7 @@ void main() {
         providers: [
           Provider<AuthRepository>.value(value: auth),
           Provider<SolicitudRepository>.value(value: solicitudes),
+          Provider<SyncService>.value(value: sync),
           ChangeNotifierProvider<AuthController>.value(value: authController),
         ],
         child: MaterialApp(
@@ -116,6 +121,7 @@ void main() {
 
     expect(find.text('Solicitud guardada. Queda pendiente de sincronizar.'), findsOneWidget);
     expect(find.byType(SolicitarPrestamoScreen), findsNothing);
+    expect(sync.sincronizaciones, ['uid-solicitante']);
 
     await tester.pumpWidget(const SizedBox());
     await abrir(tester, const MisPrestamosScreen());

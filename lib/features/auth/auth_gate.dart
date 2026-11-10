@@ -5,6 +5,7 @@ import '../../domain/models/rol.dart';
 import '../home/bodega_home.dart';
 import '../home/coordinador_home.dart';
 import '../home/solicitante_home.dart';
+import '../solicitudes/sincronizador_automatico.dart';
 import 'auth_controller.dart';
 import 'login_screen.dart';
 
@@ -22,7 +23,11 @@ class AuthGate extends StatelessWidget {
 
     final key = ValueKey('${perfil.uid}_${perfil.rol.valor}');
     return switch (perfil.rol) {
-      Rol.solicitante => SolicitanteHome(key: key, perfil: perfil),
+      Rol.solicitante => SincronizadorAutomatico(
+          key: key,
+          ownerUid: perfil.uid,
+          child: SolicitanteHome(perfil: perfil),
+        ),
       Rol.coordinador => CoordinadorHome(key: key, perfil: perfil),
       Rol.bodega => BodegaHome(key: key, perfil: perfil),
     };

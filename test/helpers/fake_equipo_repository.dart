@@ -6,7 +6,8 @@ import 'package:prestamo_equipos/data/repositories/equipo_repository.dart';
 import 'package:prestamo_equipos/domain/models/equipo.dart';
 
 class FakeEquipoRepository implements EquipoRepository {
-  FakeEquipoRepository({List<Equipo>? equipos}) : equipos = equipos ?? equiposDePrueba;
+  FakeEquipoRepository({List<Equipo>? equipos})
+    : equipos = equipos ?? equiposDePrueba;
 
   List<Equipo> equipos;
   ApiException? errorSiguiente;

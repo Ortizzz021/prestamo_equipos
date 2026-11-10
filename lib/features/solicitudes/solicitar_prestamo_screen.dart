@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/errors/regla_negocio_exception.dart';
 import '../../core/utils/fechas.dart';
 import '../../data/repositories/solicitud_repository.dart';
+import '../../data/sync/sync_service.dart';
 import '../../domain/models/equipo.dart';
 import '../../domain/models/franja.dart';
 import '../auth/auth_controller.dart';
@@ -19,13 +22,14 @@ class SolicitarPrestamoScreen extends StatefulWidget {
   final DateTime Function() reloj;
 
   static Route<bool> ruta(Equipo equipo) => MaterialPageRoute<bool>(
-        builder: (_) => SolicitarPrestamoScreen(equipo: equipo),
-      );
+    builder: (_) => SolicitarPrestamoScreen(equipo: equipo),
+  );
 
   static const int diasDisponibles = 14;
 
   @override
-  State<SolicitarPrestamoScreen> createState() => _SolicitarPrestamoScreenState();
+  State<SolicitarPrestamoScreen> createState() =>
+      _SolicitarPrestamoScreenState();
 }
 
 class _SolicitarPrestamoScreenState extends State<SolicitarPrestamoScreen> {
@@ -39,9 +43,10 @@ class _SolicitarPrestamoScreenState extends State<SolicitarPrestamoScreen> {
   void initState() {
     super.initState();
     final ahora = widget.reloj();
-    _dias = Fechas.proximosDias(ahora, SolicitarPrestamoScreen.diasDisponibles)
-        .where((d) => Franja.disponiblesDelDia(d, ahora).isNotEmpty)
-        .toList();
+    _dias = Fechas.proximosDias(
+      ahora,
+      SolicitarPrestamoScreen.diasDisponibles,
+    ).where((d) => Franja.disponiblesDelDia(d, ahora).isNotEmpty).toList();
     _diaSeleccionado = _dias.first;
   }
 
@@ -70,12 +75,14 @@ class _SolicitarPrestamoScreenState extends State<SolicitarPrestamoScreen> {
       _error = null;
     });
 
+    final sync = context.read<SyncService>();
     try {
       await context.read<SolicitudRepository>().crearSolicitud(
-            ownerUid: uid,
-            equipo: widget.equipo,
-            franja: franja,
-          );
+        ownerUid: uid,
+        equipo: widget.equipo,
+        franja: franja,
+      );
+      unawaited(sync.sincronizar(uid).then((_) {}, onError: (Object _) {}));
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -88,7 +95,10 @@ class _SolicitarPrestamoScreenState extends State<SolicitarPrestamoScreen> {
       setState(() => _error = e.mensaje);
     } catch (_) {
       if (!mounted) return;
-      setState(() => _error = 'No fue posible guardar la solicitud. Inténtalo de nuevo.');
+      setState(
+        () =>
+            _error = 'No fue posible guardar la solicitud. Inténtalo de nuevo.',
+      );
     } finally {
       if (mounted) setState(() => _guardando = false);
     }
@@ -137,9 +147,9 @@ class _SolicitarPrestamoScreenState extends State<SolicitarPrestamoScreen> {
                   onSelected: _guardando
                       ? null
                       : (_) => setState(() {
-                            _franja = f;
-                            _error = null;
-                          }),
+                          _franja = f;
+                          _error = null;
+                        }),
                 ),
             ],
           ),
@@ -198,7 +208,9 @@ class _ChipDia extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colores = Theme.of(context).colorScheme;
-    final fondo = seleccionado ? colores.primary : colores.surfaceContainerHighest;
+    final fondo = seleccionado
+        ? colores.primary
+        : colores.surfaceContainerHighest;
     final texto = seleccionado ? colores.onPrimary : colores.onSurface;
 
     return Material(
@@ -212,12 +224,22 @@ class _ChipDia extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(Fechas.diaCorto(dia), style: TextStyle(color: texto, fontSize: 12)),
+              Text(
+                Fechas.diaCorto(dia),
+                style: TextStyle(color: texto, fontSize: 12),
+              ),
               Text(
                 '${dia.day}',
-                style: TextStyle(color: texto, fontSize: 20, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: texto,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-              Text(Fechas.mesCorto(dia), style: TextStyle(color: texto, fontSize: 12)),
+              Text(
+                Fechas.mesCorto(dia),
+                style: TextStyle(color: texto, fontSize: 12),
+              ),
             ],
           ),
         ),
