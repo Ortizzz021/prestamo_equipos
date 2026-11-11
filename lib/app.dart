@@ -10,6 +10,7 @@ import 'data/remote/disponibilidad_remote_data_source.dart';
 import 'data/remote/coordinacion_remote_data_source.dart';
 import 'data/remote/bodega_remote_data_source.dart';
 import 'data/remote/solicitud_remote_data_source.dart';
+import 'data/remote/solicitud_cancelacion_remote_data_source.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/coordinacion_repository.dart';
 import 'data/repositories/bodega_repository.dart';
@@ -83,7 +84,13 @@ class PrestamoEquiposApp extends StatelessWidget {
         ),
         Provider<SolicitudRepository>(
           create: (_) =>
-              solicitudRepository ?? SolicitudRepository(db: AppDatabase()),
+              solicitudRepository ??
+              SolicitudRepository(
+                db: AppDatabase(),
+                cancelacionRemote: SolicitudCancelacionRemoteDataSource(
+                  firestore: FirebaseFirestore.instance,
+                ),
+              ),
           dispose: (_, repo) {
             if (solicitudRepository == null) repo.db.close();
           },

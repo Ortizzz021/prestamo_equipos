@@ -20,6 +20,12 @@ class FakeSyncService implements SyncService {
   Stream<void> get conexionRecuperada => const Stream.empty();
 
   @override
+  Future<T> ejecutarExclusivo<T>(
+    String solicitudId,
+    Future<T> Function() operacion,
+  ) => operacion();
+
+  @override
   Future<ResumenSync> sincronizar(String ownerUid) async {
     sincronizaciones.add(ownerUid);
     return resumen;

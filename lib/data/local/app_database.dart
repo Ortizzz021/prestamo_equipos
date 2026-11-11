@@ -77,10 +77,17 @@ class AppDatabase extends _$AppDatabase {
     return into(solicitudes).insertOnConflictUpdate(fila);
   }
 
-  Future<List<SolicitudRow>> pendientesDe(String ownerUid, String estadoPendiente) {
+  Future<List<SolicitudRow>> pendientesDe(
+    String ownerUid,
+    String estadoPendiente,
+    String estadoSolicitud,
+  ) {
     return (select(solicitudes)
           ..where(
-            (s) => s.ownerUid.equals(ownerUid) & s.estadoSync.equals(estadoPendiente),
+            (s) =>
+                s.ownerUid.equals(ownerUid) &
+                s.estadoSync.equals(estadoPendiente) &
+                s.estado.equals(estadoSolicitud),
           )
           ..orderBy([(s) => OrderingTerm.asc(s.creadaEn)]))
         .get();

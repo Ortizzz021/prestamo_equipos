@@ -43,6 +43,25 @@ class SyncService {
   final Stream<List<ConnectivityResult>>? cambiosConectividad;
 
   final Map<String, Future<ResumenSync>> _enCurso = {};
+  final Map<String, Future<void>> _bloqueosPorSolicitud = {};
+
+  Future<T> ejecutarExclusivo<T>(
+    String solicitudId,
+    Future<T> Function() operacion,
+  ) async {
+    final anterior = _bloqueosPorSolicitud[solicitudId] ?? Future<void>.value();
+    final liberado = Completer<void>();
+    _bloqueosPorSolicitud[solicitudId] = liberado.future;
+    await anterior;
+    try {
+      return await operacion();
+    } finally {
+      liberado.complete();
+      if (identical(_bloqueosPorSolicitud[solicitudId], liberado.future)) {
+        _bloqueosPorSolicitud.remove(solicitudId);
+      }
+    }
+  }
 
   Stream<void> get conexionRecuperada {
     final cambios = cambiosConectividad ?? Connectivity().onConnectivityChanged;
@@ -68,38 +87,46 @@ class SyncService {
       final solicitud = item.solicitud;
       if (solicitud.solicitanteUid != ownerUid) continue;
 
-      final resultado = await remote.enviarNueva(
-        solicitud,
-        equipoNombre: item.equipoNombre,
-      );
+      await ejecutarExclusivo(solicitud.id, () async {
+        if (!await repository.siguePendienteDeEnvio(
+          solicitud.id,
+          solicitud.version,
+        )) {
+          return;
+        }
+        final resultado = await remote.enviarNueva(
+          solicitud,
+          equipoNombre: item.equipoNombre,
+        );
 
-      switch (resultado) {
-        case EnvioConfirmado(:final estadoRemoto):
-          final confirmada = await repository.confirmarEnvio(
-            id: solicitud.id,
-            versionEnviada: solicitud.version,
-            estadoRemoto: estadoRemoto,
-          );
-          if (confirmada) {
-            enviadas++;
-          } else {
+        switch (resultado) {
+          case EnvioConfirmado(:final estadoRemoto):
+            final confirmada = await repository.confirmarEnvio(
+              id: solicitud.id,
+              versionEnviada: solicitud.version,
+              estadoRemoto: estadoRemoto,
+            );
+            if (confirmada) {
+              enviadas++;
+            } else {
+              siguenPendientes++;
+            }
+          case EnvioFalloTemporal(:final motivo):
+            await repository.registrarFalloTemporal(
+              id: solicitud.id,
+              versionEnviada: solicitud.version,
+              motivo: motivo,
+            );
             siguenPendientes++;
-          }
-        case EnvioFalloTemporal(:final motivo):
-          await repository.registrarFalloTemporal(
-            id: solicitud.id,
-            versionEnviada: solicitud.version,
-            motivo: motivo,
-          );
-          siguenPendientes++;
-        case EnvioRechazado(:final motivo):
-          await repository.registrarRechazo(
-            id: solicitud.id,
-            versionEnviada: solicitud.version,
-            motivo: motivo,
-          );
-          rechazadas++;
-      }
+          case EnvioRechazado(:final motivo):
+            await repository.registrarRechazo(
+              id: solicitud.id,
+              versionEnviada: solicitud.version,
+              motivo: motivo,
+            );
+            rechazadas++;
+        }
+      });
     }
 
     return ResumenSync(

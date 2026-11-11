@@ -5,8 +5,10 @@ import '../../core/errors/regla_negocio_exception.dart';
 import '../../domain/models/equipo.dart';
 import '../../domain/models/estado_solicitud.dart';
 import '../../domain/models/franja.dart';
+import '../../domain/models/rol.dart';
 import '../../domain/models/solicitud.dart';
 import '../local/app_database.dart';
+import '../remote/solicitud_cancelacion_remote_data_source.dart';
 
 class MiSolicitud {
   const MiSolicitud({required this.solicitud, required this.equipoNombre});
@@ -18,12 +20,14 @@ class MiSolicitud {
 class SolicitudRepository {
   SolicitudRepository({
     required this.db,
+    this.cancelacionRemote,
     Uuid? uuid,
     DateTime Function()? reloj,
   })  : _uuid = uuid ?? const Uuid(),
         _reloj = reloj ?? DateTime.now;
 
   final AppDatabase db;
+  final SolicitudCancelacionRemoteDataSource? cancelacionRemote;
   final Uuid _uuid;
   final DateTime Function() _reloj;
 
@@ -39,8 +43,20 @@ class SolicitudRepository {
   }
 
   Future<List<MiSolicitud>> pendientesDeEnvio(String ownerUid) async {
-    final filas = await db.pendientesDe(ownerUid, EstadoSync.pendiente.valor);
+    final filas = await db.pendientesDe(
+      ownerUid,
+      EstadoSync.pendiente.valor,
+      EstadoSolicitud.solicitado.valor,
+    );
     return filas.map(_aMiSolicitud).toList();
+  }
+
+  Future<bool> siguePendienteDeEnvio(String id, int version) async {
+    final fila = await db.buscarSolicitud(id);
+    return fila != null &&
+        fila.version == version &&
+        fila.estado == EstadoSolicitud.solicitado.valor &&
+        fila.estadoSync == EstadoSync.pendiente.valor;
   }
 
   Future<bool> confirmarEnvio({
@@ -106,6 +122,60 @@ class SolicitudRepository {
       estadoSync: EstadoSync.rechazado.valor,
     );
     return borradas > 0;
+  }
+
+  Future<bool> cancelarSolicitud({
+    required String id,
+    required String ownerUid,
+  }) async {
+    final fila = await db.buscarSolicitud(id);
+    if (fila == null) {
+      throw const ReglaNegocioException(
+        'SOLICITUD_NO_ENCONTRADA',
+        'La solicitud ya no está guardada en este dispositivo.',
+      );
+    }
+    if (fila.ownerUid != ownerUid) {
+      throw const ReglaNegocioException(
+        'NO_ES_DUENO',
+        'Solo quien creó la solicitud puede cancelarla.',
+      );
+    }
+    final solicitud = _aMiSolicitud(fila).solicitud;
+    final canceladaLocal = solicitud.transicionar(
+      destino: EstadoSolicitud.cancelado,
+      rol: Rol.solicitante,
+      actorUid: ownerUid,
+      ahora: _reloj(),
+    );
+    final remoto = cancelacionRemote;
+    if (remoto == null) {
+      throw const ReglaNegocioException(
+        'CANCELACION_NO_CONFIGURADA',
+        'No es posible verificar la cancelación en este momento.',
+      );
+    }
+
+    final estadoSync = EstadoSync.desdeValor(fila.estadoSync);
+    final yaSincronizada = estadoSync == EstadoSync.sincronizado;
+    final existeEnServidor = yaSincronizada || await remoto.existeRemota(id);
+    final version = existeEnServidor
+        ? await remoto.cancelar(solicitudId: id, solicitanteUid: ownerUid)
+        : canceladaLocal.version;
+
+    await db.actualizarSolicitud(
+      id,
+      SolicitudesCompanion(
+        estado: Value(EstadoSolicitud.cancelado.valor),
+        estadoSync: existeEnServidor
+            ? Value(EstadoSync.sincronizado.valor)
+            : const Value.absent(),
+        version: Value(version),
+        ultimoError: const Value(null),
+        actualizadaEn: Value(_reloj()),
+      ),
+    );
+    return existeEnServidor;
   }
 
   Future<MiSolicitud> crearSolicitud({
