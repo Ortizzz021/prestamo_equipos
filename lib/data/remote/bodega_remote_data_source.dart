@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../core/logging/app_logger.dart';
 import '../../core/errors/regla_negocio_exception.dart';
 import '../../domain/models/estado_solicitud.dart';
 import '../../domain/models/franja.dart';
@@ -29,7 +30,9 @@ class BodegaRemoteDataSource {
     String observacion,
   ) async {
     await _conConexion(() async {
-      final solicitudRef = _firestore.collection('solicitudes').doc(solicitudId);
+      final solicitudRef = _firestore
+          .collection('solicitudes')
+          .doc(solicitudId);
       await _firestore.runTransaction<void>((transaction) async {
         final snapshot = await transaction.get(solicitudRef);
         final data = snapshot.data();
@@ -71,7 +74,9 @@ class BodegaRemoteDataSource {
     String observacion,
   ) async {
     await _conConexion(() async {
-      final solicitudRef = _firestore.collection('solicitudes').doc(solicitudId);
+      final solicitudRef = _firestore
+          .collection('solicitudes')
+          .doc(solicitudId);
       await _firestore.runTransaction<void>((transaction) async {
         final snapshot = await transaction.get(solicitudRef);
         final data = snapshot.data();
@@ -102,9 +107,7 @@ class BodegaRemoteDataSource {
             'La franja no coincide con el equipo y el horario de la solicitud.',
           );
         }
-        final franjaRef = _firestore.collection('franjas').doc(
-          franjaId,
-        );
+        final franjaRef = _firestore.collection('franjas').doc(franjaId);
         await transaction.get(franjaRef);
         transaction.update(solicitudRef, {
           'estado': EstadoSolicitud.devuelto.valor,
@@ -119,17 +122,16 @@ class BodegaRemoteDataSource {
     });
   }
 
-  Stream<List<Solicitud>> _observarEstado(EstadoSolicitud estado) =>
-      _firestore
-          .collection('solicitudes')
-          .where('estado', isEqualTo: estado.valor)
-          .orderBy('creadaEn')
-          .snapshots()
-          .map(
-            (snapshot) => snapshot.docs
-                .map((doc) => _aSolicitud(doc.id, doc.data()))
-                .toList(),
-          );
+  Stream<List<Solicitud>> _observarEstado(EstadoSolicitud estado) => _firestore
+      .collection('solicitudes')
+      .where('estado', isEqualTo: estado.valor)
+      .orderBy('creadaEn')
+      .snapshots()
+      .map(
+        (snapshot) => snapshot.docs
+            .map((doc) => _aSolicitud(doc.id, doc.data()))
+            .toList(),
+      );
 
   Solicitud _aSolicitud(String id, Map<String, dynamic> data) {
     final fecha = _date(data['fecha']);
@@ -176,7 +178,7 @@ class BodegaRemoteDataSource {
   Future<T> _conConexion<T>(Future<T> Function() operacion) async {
     try {
       return await operacion();
-    } on FirebaseException catch (error) {
+    } on FirebaseException catch (error, stack) {
       if (const {
         'unavailable',
         'deadline-exceeded',
@@ -185,11 +187,19 @@ class BodegaRemoteDataSource {
         'network-request-failed',
         'unknown',
       }.contains(error.code)) {
+        AppLogger.network(error, stack);
         throw const ReglaNegocioException(
           'SIN_CONEXION',
           'Sin conexión. Conéctate a internet e inténtalo de nuevo.',
         );
       }
+      AppLogger.unexpected(error, stack);
+      rethrow;
+    } on ReglaNegocioException catch (error) {
+      AppLogger.business(error);
+      rethrow;
+    } catch (error, stack) {
+      AppLogger.unexpected(error, stack);
       rethrow;
     }
   }

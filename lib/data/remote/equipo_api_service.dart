@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import '../../core/config/api_config.dart';
 import '../../core/errors/api_exception.dart';
+import '../../core/logging/app_logger.dart';
 import 'dto/equipo_dto.dart';
 
 class EquipoApiService {
@@ -13,8 +14,8 @@ class EquipoApiService {
     http.Client? client,
     Uri? uri,
     this.timeout = ApiConfig.timeout,
-  })  : _client = client ?? http.Client(),
-        _uri = uri ?? Uri.parse(ApiConfig.catalogoUrl);
+  }) : _client = client ?? http.Client(),
+       _uri = uri ?? Uri.parse(ApiConfig.catalogoUrl);
 
   final http.Client _client;
   final Uri _uri;
@@ -26,13 +27,17 @@ class EquipoApiService {
       respuesta = await _client
           .get(_uri, headers: const {'Accept': 'application/json'})
           .timeout(timeout);
-    } on TimeoutException {
+    } on TimeoutException catch (error, stack) {
+      AppLogger.network(error, stack);
       throw const TiempoAgotadoException();
-    } on SocketException {
+    } on SocketException catch (error, stack) {
+      AppLogger.network(error, stack);
       throw const SinConexionException();
-    } on http.ClientException {
+    } on http.ClientException catch (error, stack) {
+      AppLogger.network(error, stack);
       throw const SinConexionException();
-    } catch (error) {
+    } catch (error, stack) {
+      AppLogger.unexpected(error, stack);
       throw ErrorInesperadoApiException(error);
     }
 

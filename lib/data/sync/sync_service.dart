@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 
+import '../../core/errors/regla_negocio_exception.dart';
+import '../../core/logging/app_logger.dart';
 import '../remote/solicitud_remote_data_source.dart';
 import '../remote/solicitud_seguimiento_remote_data_source.dart';
 import '../repositories/solicitud_repository.dart';
@@ -87,7 +89,12 @@ class SyncService {
     return fuente
         .observarDelSolicitante(ownerUid)
         .asyncMap((remotas) => _aplicarRemotas(ownerUid, remotas))
-        .listen(null, onError: (Object _) {});
+        .listen(
+          null,
+          onError: (Object error, StackTrace stack) {
+            AppLogger.network(error, stack);
+          },
+        );
   }
 
   Future<int> _aplicarRemotas(
@@ -123,46 +130,55 @@ class SyncService {
       if (solicitud.solicitanteUid != ownerUid) continue;
       if (!_sesionVigente(ownerUid)) break;
 
-      await ejecutarExclusivo(solicitud.id, () async {
-        if (!await repository.siguePendienteDeEnvio(
-          solicitud.id,
-          solicitud.version,
-        )) {
-          return;
-        }
-        final resultado = await remote.enviarNueva(
-          solicitud,
-          equipoNombre: item.equipoNombre,
-        );
+      try {
+        await ejecutarExclusivo(solicitud.id, () async {
+          if (!await repository.siguePendienteDeEnvio(
+            solicitud.id,
+            solicitud.version,
+          )) {
+            return;
+          }
+          final resultado = await remote.enviarNueva(
+            solicitud,
+            equipoNombre: item.equipoNombre,
+          );
 
-        switch (resultado) {
-          case EnvioConfirmado(:final estadoRemoto):
-            final confirmada = await repository.confirmarEnvio(
-              id: solicitud.id,
-              versionEnviada: solicitud.version,
-              estadoRemoto: estadoRemoto,
-            );
-            if (confirmada) {
-              enviadas++;
-            } else {
+          switch (resultado) {
+            case EnvioConfirmado(:final estadoRemoto):
+              final confirmada = await repository.confirmarEnvio(
+                id: solicitud.id,
+                versionEnviada: solicitud.version,
+                estadoRemoto: estadoRemoto,
+              );
+              if (confirmada) {
+                enviadas++;
+              } else {
+                siguenPendientes++;
+              }
+            case EnvioFalloTemporal(:final motivo):
+              await repository.registrarFalloTemporal(
+                id: solicitud.id,
+                versionEnviada: solicitud.version,
+                motivo: motivo,
+              );
               siguenPendientes++;
-            }
-          case EnvioFalloTemporal(:final motivo):
-            await repository.registrarFalloTemporal(
-              id: solicitud.id,
-              versionEnviada: solicitud.version,
-              motivo: motivo,
-            );
-            siguenPendientes++;
-          case EnvioRechazado(:final motivo):
-            await repository.registrarRechazo(
-              id: solicitud.id,
-              versionEnviada: solicitud.version,
-              motivo: motivo,
-            );
-            rechazadas++;
+            case EnvioRechazado(:final motivo):
+              await repository.registrarRechazo(
+                id: solicitud.id,
+                versionEnviada: solicitud.version,
+                motivo: motivo,
+              );
+              rechazadas++;
+          }
+        });
+      } catch (error, stack) {
+        if (error is ReglaNegocioException) {
+          AppLogger.business(error);
+        } else {
+          AppLogger.unexpected(error, stack);
         }
-      });
+        siguenPendientes++;
+      }
     }
 
     return ResumenSync(

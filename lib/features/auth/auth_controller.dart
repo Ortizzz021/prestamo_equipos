@@ -3,19 +3,21 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../../core/errors/auth_exception.dart';
+import '../../core/logging/app_logger.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../domain/models/perfil.dart';
 
 class AuthController extends ChangeNotifier {
-  // ignore: prefer_initializing_formals
-  AuthController({required AuthRepository repository}) : _repository = repository {
-    _perfilSubscription = _repository.perfilActual().listen(
+  AuthController({required this.repository}) {
+    _perfilSubscription = repository.perfilActual().listen(
       (perfil) {
         _perfil = perfil;
+        unawaited(AppLogger.identify(perfil?.uid));
         _sesionResuelta = true;
         _notifyIfAlive();
       },
-      onError: (Object error) {
+      onError: (Object error, StackTrace stack) {
+        if (error is! AuthException) AppLogger.network(error, stack);
         _mensajeError = error is AuthException
             ? error.mensaje
             : 'No fue posible cargar el perfil. Inténtalo de nuevo';
@@ -25,7 +27,7 @@ class AuthController extends ChangeNotifier {
     );
   }
 
-  final AuthRepository _repository;
+  final AuthRepository repository;
   late final StreamSubscription<Perfil?> _perfilSubscription;
   bool _cargando = false;
   bool _disposed = false;
@@ -50,22 +52,20 @@ class AuthController extends ChangeNotifier {
     required String email,
     required String password,
   }) => _ejecutar(
-    () => _repository.registrar(
-      nombre: nombre,
-      email: email,
-      password: password,
-    ),
+    () =>
+        repository.registrar(nombre: nombre, email: email, password: password),
   );
 
   Future<void> iniciarSesion({
     required String email,
     required String password,
   }) => _ejecutar(
-    () => _repository.iniciarSesion(email: email, password: password),
+    () => repository.iniciarSesion(email: email, password: password),
   );
 
   Future<void> cerrarSesion() => _ejecutar(() async {
-    await _repository.cerrarSesion();
+    await repository.cerrarSesion();
+    await AppLogger.identify(null);
     return null;
   });
 
@@ -76,10 +76,14 @@ class AuthController extends ChangeNotifier {
     _notifyIfAlive();
     try {
       final resultado = await operacion();
-      if (resultado != null) _perfil = resultado;
+      if (resultado != null) {
+        _perfil = resultado;
+        await AppLogger.identify(resultado.uid);
+      }
     } on AuthException catch (error) {
       _mensajeError = error.mensaje;
-    } catch (_) {
+    } catch (error, stack) {
+      if (error is! AuthException) AppLogger.unexpected(error, stack);
       _mensajeError = 'Ocurrió un error. Inténtalo de nuevo';
     } finally {
       _cargando = false;

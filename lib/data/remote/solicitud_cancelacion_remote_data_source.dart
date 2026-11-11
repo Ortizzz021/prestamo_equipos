@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../core/logging/app_logger.dart';
 import '../../core/errors/regla_negocio_exception.dart';
 import '../../domain/models/estado_solicitud.dart';
 import '../../domain/models/franja.dart';
@@ -24,8 +25,11 @@ class SolicitudCancelacionRemoteDataSource {
           .doc(solicitudId)
           .get(const GetOptions(source: Source.server));
       return snapshot.exists;
-    } on FirebaseException catch (error) {
-      _lanzarSiSinConexion(error);
+    } on FirebaseException catch (error, stack) {
+      _lanzarSiSinConexion(error, stack);
+    } catch (error, stack) {
+      AppLogger.unexpected(error, stack);
+      rethrow;
     }
   }
 
@@ -84,8 +88,11 @@ class SolicitudCancelacionRemoteDataSource {
         if (franjaRef != null) transaction.delete(franjaRef);
         return cancelada.version;
       });
-    } on FirebaseException catch (error) {
-      _lanzarSiSinConexion(error);
+    } on FirebaseException catch (error, stack) {
+      _lanzarSiSinConexion(error, stack);
+    } catch (error, stack) {
+      AppLogger.unexpected(error, stack);
+      rethrow;
     }
   }
 
@@ -129,7 +136,7 @@ class SolicitudCancelacionRemoteDataSource {
     return null;
   }
 
-  Never _lanzarSiSinConexion(FirebaseException error) {
+  Never _lanzarSiSinConexion(FirebaseException error, StackTrace stack) {
     if (const {
       'unavailable',
       'deadline-exceeded',
@@ -138,11 +145,13 @@ class SolicitudCancelacionRemoteDataSource {
       'network-request-failed',
       'unknown',
     }.contains(error.code)) {
+      AppLogger.network(error, stack);
       throw const ReglaNegocioException(
         'SIN_CONEXION',
         'Para cancelar una solicitud ya enviada necesitas conexión.',
       );
     }
+    AppLogger.unexpected(error, stack);
     throw error;
   }
 }

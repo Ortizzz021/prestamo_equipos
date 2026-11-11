@@ -1,4 +1,5 @@
 import '../../core/errors/api_exception.dart';
+import '../../core/logging/app_logger.dart';
 import '../../domain/models/equipo.dart';
 import '../remote/equipo_api_service.dart';
 
@@ -18,11 +19,14 @@ class EquipoRepository {
     try {
       final dtos = await api.obtenerEquipos();
       final equipos = dtos.map((dto) => dto.toDomain()).toList()
-        ..sort((a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()));
+        ..sort(
+          (a, b) => a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase()),
+        );
       return List.unmodifiable(equipos);
     } on ApiException {
       rethrow;
-    } catch (error) {
+    } catch (error, stack) {
+      AppLogger.unexpected(error, stack);
       throw ErrorInesperadoApiException(error);
     }
   }

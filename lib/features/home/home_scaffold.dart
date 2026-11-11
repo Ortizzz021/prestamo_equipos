@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../domain/models/perfil.dart';
 import '../auth/auth_controller.dart';
+import '../diagnostico/diagnostico_screen.dart';
 
 class OpcionInicio {
   const OpcionInicio({
@@ -65,6 +67,17 @@ class HomeScaffold extends StatelessWidget {
       appBar: AppBar(
         title: Text(titulo),
         actions: [
+          if (kDebugMode)
+            IconButton(
+              key: const Key('diagnostico'),
+              tooltip: 'Diagnóstico',
+              icon: const Icon(Icons.bug_report_outlined),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const DiagnosticoScreen(),
+                ),
+              ),
+            ),
           IconButton(
             key: const Key('cerrar_sesion'),
             tooltip: 'Cerrar sesión',
@@ -76,10 +89,7 @@ class HomeScaffold extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(
-            'Hola, $nombre',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+          Text('Hola, $nombre', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerLeft,

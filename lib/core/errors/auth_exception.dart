@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+
+import '../logging/app_logger.dart';
 
 class AuthException implements Exception {
   const AuthException(this.mensaje);
@@ -10,13 +11,10 @@ class AuthException implements Exception {
     FirebaseAuthException exception,
   ) {
     final mensaje = mensajeParaCodigo(exception.code);
-    if (!_esErrorEsperado(exception.code)) {
-      FirebaseCrashlytics.instance.recordError(
-        'FirebaseAuthException(${exception.code})',
-        StackTrace.current,
-        reason: 'Error no esperado de autenticación',
-        fatal: false,
-      );
+    if (exception.code == 'network-request-failed') {
+      AppLogger.network(exception, StackTrace.current);
+    } else if (!_esErrorEsperado(exception.code)) {
+      AppLogger.unexpected(exception, StackTrace.current);
     }
     return AuthException(mensaje);
   }

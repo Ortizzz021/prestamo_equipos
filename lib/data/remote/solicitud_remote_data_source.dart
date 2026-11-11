@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../core/logging/app_logger.dart';
 import '../../domain/models/estado_solicitud.dart';
 import '../../domain/models/solicitud.dart';
 
@@ -91,13 +92,20 @@ class FirestoreSolicitudRemote implements SolicitudRemoteDataSource {
             return const EnvioConfirmado(EstadoSolicitud.solicitado);
           })
           .timeout(timeout);
-    } on TimeoutException {
+    } on TimeoutException catch (error, stack) {
+      AppLogger.network(error, stack);
       return const EnvioFalloTemporal(
         'El servidor no respondió a tiempo. Se reintentará más tarde.',
       );
-    } on FirebaseException catch (e) {
-      return clasificarError(e.code);
-    } catch (_) {
+    } on FirebaseException catch (error, stack) {
+      if (_codigosTemporales.contains(error.code)) {
+        AppLogger.network(error, stack);
+      } else {
+        AppLogger.unexpected(error, stack);
+      }
+      return clasificarError(error.code);
+    } catch (error, stack) {
+      AppLogger.unexpected(error, stack);
       return const EnvioFalloTemporal(
         'No fue posible sincronizar. Se reintentará más tarde.',
       );

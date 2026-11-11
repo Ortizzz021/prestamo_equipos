@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../core/logging/app_logger.dart';
 import '../../core/errors/regla_negocio_exception.dart';
 import '../../domain/models/estado_solicitud.dart';
 import '../../domain/models/franja.dart';
@@ -30,7 +31,9 @@ class CoordinacionRemoteDataSource {
 
   Future<void> aprobar(String solicitudId, String coordinadorUid) async {
     await _conConexion(() async {
-      final solicitudRef = _firestore.collection('solicitudes').doc(solicitudId);
+      final solicitudRef = _firestore
+          .collection('solicitudes')
+          .doc(solicitudId);
       await _firestore.runTransaction<void>((transaction) async {
         final solicitudSnapshot = await transaction.get(solicitudRef);
         final data = solicitudSnapshot.data();
@@ -131,7 +134,9 @@ class CoordinacionRemoteDataSource {
       );
     }
     await _conConexion(() async {
-      final solicitudRef = _firestore.collection('solicitudes').doc(solicitudId);
+      final solicitudRef = _firestore
+          .collection('solicitudes')
+          .doc(solicitudId);
       await _firestore.runTransaction<void>((transaction) async {
         final snapshot = await transaction.get(solicitudRef);
         final data = snapshot.data();
@@ -205,17 +210,13 @@ class CoordinacionRemoteDataSource {
       final equipoRef = _firestore.collection('equipos_estado').doc(equipoId);
       await _firestore.runTransaction<void>((transaction) async {
         await transaction.get(equipoRef);
-        transaction.set(
-          equipoRef,
-          {
-            'bloqueado': bloqueado,
-            'actualizadoPor': coordinadorUid,
-            'actualizadoEn': FieldValue.serverTimestamp(),
-            if (bloqueado) 'motivo': motivo,
-            if (!bloqueado) 'motivo': FieldValue.delete(),
-          },
-          SetOptions(merge: true),
-        );
+        transaction.set(equipoRef, {
+          'bloqueado': bloqueado,
+          'actualizadoPor': coordinadorUid,
+          'actualizadoEn': FieldValue.serverTimestamp(),
+          if (bloqueado) 'motivo': motivo,
+          if (!bloqueado) 'motivo': FieldValue.delete(),
+        }, SetOptions(merge: true));
       });
     });
   }
@@ -223,13 +224,21 @@ class CoordinacionRemoteDataSource {
   Future<T> _conConexion<T>(Future<T> Function() operacion) async {
     try {
       return await operacion();
-    } on FirebaseException catch (error) {
+    } on FirebaseException catch (error, stack) {
       if (_esErrorDeRed(error.code)) {
+        AppLogger.network(error, stack);
         throw const ReglaNegocioException(
           'SIN_CONEXION',
           'Sin conexión. Conéctate a internet e inténtalo de nuevo.',
         );
       }
+      AppLogger.unexpected(error, stack);
+      rethrow;
+    } on ReglaNegocioException catch (error) {
+      AppLogger.business(error);
+      rethrow;
+    } catch (error, stack) {
+      AppLogger.unexpected(error, stack);
       rethrow;
     }
   }
