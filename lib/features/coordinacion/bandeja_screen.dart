@@ -8,15 +8,14 @@ import '../../domain/models/rol.dart';
 import '../../domain/models/solicitud.dart';
 import '../auth/auth_controller.dart';
 import '../auth/requiere_rol.dart';
+import '../../core/widgets/dialogo_texto.dart';
 
 class BandejaScreen extends StatelessWidget {
   const BandejaScreen({super.key});
 
   @override
-  Widget build(BuildContext context) => const RequiereRol(
-    roles: {Rol.coordinador},
-    child: _BandejaProtegida(),
-  );
+  Widget build(BuildContext context) =>
+      const RequiereRol(roles: {Rol.coordinador}, child: _BandejaProtegida());
 }
 
 class _BandejaProtegida extends StatefulWidget {
@@ -55,35 +54,13 @@ class _BandejaProtegidaState extends State<_BandejaProtegida> {
         false;
   }
 
-  Future<String?> _pedirMotivo() async {
-    final controller = TextEditingController();
-    final motivo = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Motivo del rechazo'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            labelText: 'Motivo',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            child: const Text('Continuar'),
-          ),
-        ],
-      ),
+  Future<String?> _pedirMotivo() {
+    return DialogoTexto.mostrar(
+      context,
+      titulo: 'Motivo del rechazo',
+      etiqueta: 'Motivo',
+      mensajeObligatorio: 'Escribe el motivo del rechazo.',
     );
-    controller.dispose();
-    return motivo?.trim().isEmpty ?? true ? null : motivo;
   }
 
   Future<void> _aprobar(Solicitud solicitud) async {
@@ -214,7 +191,9 @@ class _BandejaProtegidaState extends State<_BandejaProtegida> {
                           Expanded(
                             child: OutlinedButton(
                               key: Key('rechazar_${solicitud.id}'),
-                              onPressed: ocupado ? null : () => _rechazar(solicitud),
+                              onPressed: ocupado
+                                  ? null
+                                  : () => _rechazar(solicitud),
                               child: const Text('Rechazar'),
                             ),
                           ),
@@ -222,7 +201,9 @@ class _BandejaProtegidaState extends State<_BandejaProtegida> {
                           Expanded(
                             child: FilledButton(
                               key: Key('aprobar_${solicitud.id}'),
-                              onPressed: ocupado ? null : () => _aprobar(solicitud),
+                              onPressed: ocupado
+                                  ? null
+                                  : () => _aprobar(solicitud),
                               child: enProceso
                                   ? const SizedBox(
                                       width: 18,

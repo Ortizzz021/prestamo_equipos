@@ -11,6 +11,7 @@ import '../../domain/models/equipo.dart';
 import '../../domain/models/rol.dart';
 import '../auth/auth_controller.dart';
 import '../auth/requiere_rol.dart';
+import '../../core/widgets/dialogo_texto.dart';
 
 class BloqueoEquiposScreen extends StatelessWidget {
   const BloqueoEquiposScreen({super.key});
@@ -99,35 +100,13 @@ class _BloqueoEquiposProtegidoState extends State<_BloqueoEquiposProtegido> {
     }
   }
 
-  Future<String?> _pedirMotivo(Equipo equipo) async {
-    final controller = TextEditingController();
-    final resultado = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Motivo del bloqueo: ${equipo.nombre}'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            labelText: 'Motivo',
-            border: OutlineInputBorder(),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            child: const Text('Continuar'),
-          ),
-        ],
-      ),
+  Future<String?> _pedirMotivo(Equipo equipo) {
+    return DialogoTexto.mostrar(
+      context,
+      titulo: 'Motivo del bloqueo: ${equipo.nombre}',
+      etiqueta: 'Motivo',
+      mensajeObligatorio: 'Escribe el motivo del bloqueo.',
     );
-    controller.dispose();
-    return resultado?.trim().isEmpty ?? true ? null : resultado;
   }
 
   void _mensaje(String texto, {bool error = false}) {
@@ -194,7 +173,8 @@ class _BloqueoEquiposProtegidoState extends State<_BloqueoEquiposProtegido> {
                 builder: (context, estadoSnapshot) {
                   final estado = estadoSnapshot.hasError
                       ? const EstadoEquipo.noVerificado()
-                      : estadoSnapshot.data ?? const EstadoEquipo.noVerificado();
+                      : estadoSnapshot.data ??
+                            const EstadoEquipo.noVerificado();
                   final ocupado = _enProceso.contains(equipo.id);
                   return SwitchListTile(
                     title: Text(equipo.nombre),
@@ -225,6 +205,7 @@ class _BloqueoEquiposProtegidoState extends State<_BloqueoEquiposProtegido> {
 
   String _mensajeCatalogo(Object? error) => switch (error) {
     ApiException api => api.mensaje,
-    _ => 'No se pudo cargar el catálogo. Comprueba tu conexión e inténtalo de nuevo.',
+    _ =>
+      'No se pudo cargar el catálogo. Comprueba tu conexión e inténtalo de nuevo.',
   };
 }

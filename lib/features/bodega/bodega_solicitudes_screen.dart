@@ -6,6 +6,7 @@ import '../../core/errors/regla_negocio_exception.dart';
 import '../../data/repositories/bodega_repository.dart';
 import '../../domain/models/solicitud.dart';
 import '../auth/auth_controller.dart';
+import '../../core/widgets/dialogo_texto.dart';
 
 class BodegaSolicitudesScreen extends StatefulWidget {
   const BodegaSolicitudesScreen({super.key, required this.devoluciones});
@@ -43,58 +44,18 @@ class _BodegaSolicitudesScreenState extends State<BodegaSolicitudesScreen> {
     });
   }
 
-  Future<String?> _pedirObservacion(Solicitud solicitud) async {
-    final controller = TextEditingController();
-    String? error;
-    final resultado = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, actualizar) => AlertDialog(
-          title: Text(
-            widget.devoluciones ? 'Registrar devolución' : 'Registrar entrega',
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(solicitud.equipoNombre ?? solicitud.equipoId),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                autofocus: true,
-                maxLines: 3,
-                maxLength: 240,
-                decoration: InputDecoration(
-                  labelText: 'Observación del estado físico',
-                  hintText: 'Describe el estado del equipo',
-                  errorText: error,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () {
-                final observacion = controller.text.trim();
-                if (observacion.isEmpty) {
-                  actualizar(() => error = 'La observación es obligatoria.');
-                  return;
-                }
-                Navigator.of(dialogContext).pop(observacion);
-              },
-              child: const Text('Continuar'),
-            ),
-          ],
-        ),
-      ),
+  Future<String?> _pedirObservacion(Solicitud solicitud) {
+    return DialogoTexto.mostrar(
+      context,
+      titulo: widget.devoluciones
+          ? 'Registrar devolución'
+          : 'Registrar entrega',
+      subtitulo: solicitud.equipoNombre ?? solicitud.equipoId,
+      etiqueta: 'Observación del estado físico',
+      hint: 'Describe el estado del equipo',
+      mensajeObligatorio: 'La observación es obligatoria.',
+      maxLength: 240,
     );
-    controller.dispose();
-    return resultado;
   }
 
   Future<bool> _confirmar(Solicitud solicitud) async =>
@@ -133,7 +94,10 @@ class _BodegaSolicitudesScreenState extends State<BodegaSolicitudesScreen> {
     if (!confirmado || !mounted) return;
     final uid = context.read<AuthController>().perfil?.uid;
     if (uid == null) {
-      _mostrarMensaje('Tu sesión expiró. Vuelve a iniciar sesión.', error: true);
+      _mostrarMensaje(
+        'Tu sesión expiró. Vuelve a iniciar sesión.',
+        error: true,
+      );
       return;
     }
 
@@ -141,11 +105,7 @@ class _BodegaSolicitudesScreenState extends State<BodegaSolicitudesScreen> {
     try {
       final repository = context.read<BodegaRepository>();
       if (widget.devoluciones) {
-        await repository.registrarDevolucion(
-          solicitud.id,
-          uid,
-          observacion,
-        );
+        await repository.registrarDevolucion(solicitud.id, uid, observacion);
       } else {
         await repository.registrarEntrega(solicitud.id, uid, observacion);
       }
@@ -184,7 +144,9 @@ class _BodegaSolicitudesScreenState extends State<BodegaSolicitudesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.devoluciones ? 'Registrar devolución' : 'Registrar entrega'),
+        title: Text(
+          widget.devoluciones ? 'Registrar devolución' : 'Registrar entrega',
+        ),
       ),
       body: StreamBuilder<List<Solicitud>>(
         key: ValueKey(_revision),
