@@ -1,0 +1,190 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function autenticado() {
+      return request.auth != null;
+    }
+
+    function rolActual() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.rol;
+    }
+
+    function esSolicitante() {
+      return autenticado() && rolActual() == 'solicitante';
+    }
+
+    function esCoordinador() {
+      return autenticado() && rolActual() == 'coordinador';
+    }
+
+    function esBodega() {
+      return autenticado() && rolActual() == 'bodega';
+    }
+
+    function soloCambia(campos) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(campos);
+    }
+
+    function versionIncrementada() {
+      return request.resource.data.version is int
+        && request.resource.data.version == resource.data.version + 1;
+    }
+
+    function autorYMarca(campoAutor, campoFecha) {
+      return request.resource.data[campoAutor] == request.auth.uid
+        && request.resource.data[campoFecha] == request.time
+        && request.resource.data.actualizadaEn == request.time
+        && versionIncrementada();
+    }
+
+    function solicitudTras(solicitudId) {
+      return getAfter(/databases/$(database)/documents/solicitudes/$(solicitudId));
+    }
+
+    match /users/{uid} {
+      allow read: if autenticado()
+        && (request.auth.uid == uid || esCoordinador() || esBodega());
+
+      allow create: if autenticado()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasAll(['uid', 'nombre', 'email', 'rol', 'creadoEn'])
+        && request.resource.data.keys().hasOnly(['uid', 'nombre', 'email', 'rol', 'creadoEn'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.nombre is string
+        && request.resource.data.email is string
+        && request.resource.data.rol == 'solicitante'
+        && request.resource.data.creadoEn == request.time;
+
+      allow update: if autenticado()
+        && request.auth.uid == uid
+        && soloCambia(['nombre', 'email'])
+        && request.resource.data.rol == resource.data.rol
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.nombre is string
+        && request.resource.data.email is string;
+
+      allow delete: if false;
+    }
+
+    match /solicitudes/{solicitudId} {
+      allow create: if esSolicitante()
+        && request.resource.data.keys().hasAll([
+          'id', 'solicitanteUid', 'equipoId', 'equipoNombre', 'fecha', 'fechaClave',
+          'slot', 'franjaId', 'estado', 'version', 'creadaEn', 'actualizadaEn'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'id', 'solicitanteUid', 'equipoId', 'equipoNombre', 'fecha', 'fechaClave',
+          'slot', 'franjaId', 'estado', 'version', 'creadaEn', 'actualizadaEn'
+        ])
+        && request.resource.data.id == solicitudId
+        && request.resource.data.solicitanteUid == request.auth.uid
+        && request.resource.data.equipoId is string
+        && request.resource.data.equipoNombre is string
+        && request.resource.data.fecha is timestamp
+        && request.resource.data.fechaClave is string
+        && request.resource.data.slot is string
+        && request.resource.data.franjaId is string
+        && request.resource.data.estado == 'SOLICITADO'
+        && request.resource.data.version is int
+        && request.resource.data.version == 1
+        && request.resource.data.creadaEn is timestamp
+        && request.resource.data.actualizadaEn == request.time;
+
+      allow read: if autenticado()
+        && ((!exists(/databases/$(database)/documents/solicitudes/$(solicitudId)) && esSolicitante())
+          || resource.data.solicitanteUid == request.auth.uid || esCoordinador() || esBodega());
+
+      allow update: if esSolicitante()
+        && resource.data.solicitanteUid == request.auth.uid
+        && resource.data.estado in ['SOLICITADO', 'APROBADO']
+        && request.resource.data.estado == 'CANCELADO'
+        && soloCambia(['estado', 'canceladaEn', 'version', 'actualizadaEn'])
+        && request.resource.data.canceladaEn == request.time
+        && request.resource.data.actualizadaEn == request.time
+        && versionIncrementada()
+        && (resource.data.estado != 'APROBADO'
+          || !existsAfter(/databases/$(database)/documents/franjas/$(resource.data.franjaId)))
+        || esCoordinador()
+        && resource.data.solicitanteUid != request.auth.uid
+        && resource.data.estado == 'SOLICITADO'
+        && request.resource.data.estado == 'APROBADO'
+        && soloCambia(['estado', 'aprobadoPor', 'aprobadoEn', 'version', 'actualizadaEn'])
+        && autorYMarca('aprobadoPor', 'aprobadoEn')
+        && existsAfter(/databases/$(database)/documents/franjas/$(resource.data.franjaId))
+        && (!exists(/databases/$(database)/documents/equipos_estado/$(resource.data.equipoId))
+          || get(/databases/$(database)/documents/equipos_estado/$(resource.data.equipoId)).data.bloqueado != true)
+        || esCoordinador()
+        && resource.data.solicitanteUid != request.auth.uid
+        && resource.data.estado == 'SOLICITADO'
+        && request.resource.data.estado == 'RECHAZADO'
+        && soloCambia(['estado', 'rechazadoPor', 'rechazadoEn', 'motivoRechazo', 'version', 'actualizadaEn'])
+        && autorYMarca('rechazadoPor', 'rechazadoEn')
+        && request.resource.data.motivoRechazo is string
+        && request.resource.data.motivoRechazo.size() > 0
+        || esBodega()
+        && resource.data.estado == 'APROBADO'
+        && request.resource.data.estado == 'ENTREGADO'
+        && soloCambia(['estado', 'observacionEntrega', 'entregadoPor', 'entregadoEn', 'version', 'actualizadaEn'])
+        && autorYMarca('entregadoPor', 'entregadoEn')
+        && request.resource.data.observacionEntrega is string
+        && request.resource.data.observacionEntrega.size() > 0
+        || esBodega()
+        && resource.data.estado == 'ENTREGADO'
+        && request.resource.data.estado == 'DEVUELTO'
+        && soloCambia(['estado', 'observacionDevolucion', 'devueltoPor', 'devueltoEn', 'version', 'actualizadaEn'])
+        && autorYMarca('devueltoPor', 'devueltoEn')
+        && request.resource.data.observacionDevolucion is string
+        && request.resource.data.observacionDevolucion.size() > 0
+        && !existsAfter(/databases/$(database)/documents/franjas/$(resource.data.franjaId));
+
+      allow delete: if false;
+    }
+
+    match /franjas/{franjaId} {
+      allow read: if autenticado();
+
+      allow create: if esCoordinador()
+        && request.resource.data.keys().hasAll(['equipoId', 'fechaClave', 'slot', 'solicitudId', 'ocupadaEn'])
+        && request.resource.data.keys().hasOnly(['equipoId', 'fechaClave', 'slot', 'solicitudId', 'ocupadaEn'])
+        && request.resource.data.equipoId is string
+        && request.resource.data.fechaClave is string
+        && request.resource.data.slot is string
+        && request.resource.data.solicitudId is string
+        && request.resource.data.ocupadaEn == request.time
+        && solicitudTras(request.resource.data.solicitudId).data.estado == 'APROBADO'
+        && solicitudTras(request.resource.data.solicitudId).data.franjaId == franjaId
+        && solicitudTras(request.resource.data.solicitudId).data.solicitanteUid != request.auth.uid;
+
+      allow update: if false;
+
+      allow delete: if autenticado()
+        && (
+          esBodega()
+          && get(/databases/$(database)/documents/solicitudes/$(resource.data.solicitudId)).data.estado == 'ENTREGADO'
+          && solicitudTras(resource.data.solicitudId).data.estado == 'DEVUELTO'
+          && solicitudTras(resource.data.solicitudId).data.franjaId == franjaId
+          || esSolicitante()
+          && get(/databases/$(database)/documents/solicitudes/$(resource.data.solicitudId)).data.solicitanteUid == request.auth.uid
+          && get(/databases/$(database)/documents/solicitudes/$(resource.data.solicitudId)).data.estado == 'APROBADO'
+          && solicitudTras(resource.data.solicitudId).data.estado == 'CANCELADO'
+          && solicitudTras(resource.data.solicitudId).data.franjaId == franjaId
+        );
+    }
+
+    match /equipos_estado/{equipoId} {
+      allow read: if autenticado();
+
+      allow create, update: if esCoordinador()
+        && request.resource.data.keys().hasAll(['bloqueado', 'actualizadoPor', 'actualizadoEn'])
+        && request.resource.data.keys().hasOnly(['bloqueado', 'motivo', 'actualizadoPor', 'actualizadoEn'])
+        && request.resource.data.bloqueado is bool
+        && request.resource.data.actualizadoPor == request.auth.uid
+        && request.resource.data.actualizadoEn == request.time
+        && (request.resource.data.bloqueado == false
+          || (request.resource.data.motivo is string && request.resource.data.motivo.size() > 0));
+
+      allow delete: if false;
+    }
+  }
+}
