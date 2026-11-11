@@ -17,6 +17,7 @@ class AuthController extends ChangeNotifier {
         _notifyIfAlive();
       },
       onError: (Object error, StackTrace stack) {
+        if (!repository.haySesion) return;
         if (error is! AuthException) AppLogger.network(error, stack);
         _mensajeError = error is AuthException
             ? error.mensaje
@@ -65,6 +66,7 @@ class AuthController extends ChangeNotifier {
 
   Future<void> cerrarSesion() => _ejecutar(() async {
     await repository.cerrarSesion();
+    _perfil = null;
     await AppLogger.identify(null);
     return null;
   });

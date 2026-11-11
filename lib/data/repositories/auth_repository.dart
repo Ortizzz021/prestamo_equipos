@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -71,17 +73,46 @@ class AuthRepository {
     }
   }
 
+  bool get haySesion => _auth.currentUser != null;
+
   Future<void> cerrarSesion() => _auth.signOut();
 
   Stream<Perfil?> perfilActual() {
-    return _auth.authStateChanges().asyncExpand((user) {
-      if (user == null) return Stream<Perfil?>.value(null);
-      return _users.doc(user.uid).snapshots().map((snapshot) {
-        final data = snapshot.data();
-        if (data == null) return _perfilSolicitante(user);
-        return Perfil.fromMap(data, uid: user.uid);
-      });
-    });
+    StreamSubscription<User?>? authSub;
+    StreamSubscription<Perfil>? perfilSub;
+    late final StreamController<Perfil?> controller;
+
+    void escucharPerfil(User? user) {
+      unawaited(perfilSub?.cancel());
+      perfilSub = null;
+      if (user == null) {
+        controller.add(null);
+        return;
+      }
+      perfilSub = _users
+          .doc(user.uid)
+          .snapshots()
+          .map((snapshot) {
+            final data = snapshot.data();
+            if (data == null) return _perfilSolicitante(user);
+            return Perfil.fromMap(data, uid: user.uid);
+          })
+          .listen(controller.add, onError: controller.addError);
+    }
+
+    controller = StreamController<Perfil?>(
+      onListen: () {
+        authSub = _auth.authStateChanges().listen(
+          escucharPerfil,
+          onError: controller.addError,
+        );
+      },
+      onCancel: () async {
+        await perfilSub?.cancel();
+        await authSub?.cancel();
+      },
+    );
+    return controller.stream;
   }
 
   Future<Perfil> _leerPerfil(User user) async {
