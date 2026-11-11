@@ -65,7 +65,7 @@ class AuthRepository {
           'No fue posible iniciar sesión. Inténtalo de nuevo',
         );
       }
-      return _leerPerfil(user);
+      return await _leerPerfil(user);
     } on FirebaseAuthException catch (error) {
       throw AuthException.fromFirebaseAuthException(error);
     }

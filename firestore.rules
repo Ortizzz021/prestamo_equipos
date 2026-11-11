@@ -92,8 +92,10 @@ service cloud.firestore {
         && request.resource.data.actualizadaEn == request.time;
 
       allow read: if autenticado()
-        && ((!exists(/databases/$(database)/documents/solicitudes/$(solicitudId)) && esSolicitante())
-          || resource.data.solicitanteUid == request.auth.uid || esCoordinador() || esBodega());
+        && (resource.data.solicitanteUid == request.auth.uid
+          || esCoordinador()
+          || esBodega()
+          || (resource == null && esSolicitante()));
 
       allow update: if esSolicitante()
         && resource.data.solicitanteUid == request.auth.uid

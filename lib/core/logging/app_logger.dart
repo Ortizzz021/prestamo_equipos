@@ -10,18 +10,7 @@ import 'package:http/http.dart' as http;
 import '../errors/api_exception.dart';
 import '../errors/regla_negocio_exception.dart';
 
-typedef CrashlyticsReportSink =
-    void Function(
-      Object error,
-      StackTrace stack, {
-      required String reason,
-      required bool fatal,
-    });
-
 abstract final class AppLogger {
-  @visibleForTesting
-  static CrashlyticsReportSink? reportSinkForTesting;
-
   static const _erroresRedFirebase = {
     'unavailable',
     'deadline-exceeded',
@@ -118,11 +107,6 @@ abstract final class AppLogger {
     required String reason,
     required bool fatal,
   }) {
-    final sink = reportSinkForTesting;
-    if (sink != null) {
-      sink(error.runtimeType, stack, reason: reason, fatal: fatal);
-      return;
-    }
     final crashlytics = _crashlytics;
     if (crashlytics == null) return;
     unawaited(
