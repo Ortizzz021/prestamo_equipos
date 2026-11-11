@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -11,6 +12,7 @@ import 'data/remote/coordinacion_remote_data_source.dart';
 import 'data/remote/bodega_remote_data_source.dart';
 import 'data/remote/solicitud_remote_data_source.dart';
 import 'data/remote/solicitud_cancelacion_remote_data_source.dart';
+import 'data/remote/solicitud_seguimiento_remote_data_source.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/coordinacion_repository.dart';
 import 'data/repositories/bodega_repository.dart';
@@ -103,12 +105,15 @@ class PrestamoEquiposApp extends StatelessWidget {
                 remote: FirestoreSolicitudRemote(
                   firestore: FirebaseFirestore.instance,
                 ),
+                seguimiento: FirestoreSolicitudSeguimiento(
+                  firestore: FirebaseFirestore.instance,
+                ),
+                uidActual: () => FirebaseAuth.instance.currentUser?.uid,
               ),
         ),
         ChangeNotifierProvider<AuthController>(
-          create: (context) => AuthController(
-            repository: context.read<AuthRepository>(),
-          ),
+          create: (context) =>
+              AuthController(repository: context.read<AuthRepository>()),
         ),
       ],
       child: MaterialApp(

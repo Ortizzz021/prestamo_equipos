@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 import '../remote/solicitud_remote_data_source.dart';
+import '../remote/solicitud_seguimiento_remote_data_source.dart';
 import '../repositories/solicitud_repository.dart';
 
 class ResumenSync {
@@ -36,11 +37,15 @@ class SyncService {
     required this.repository,
     required this.remote,
     this.cambiosConectividad,
+    this.seguimiento,
+    this.uidActual,
   });
 
   final SolicitudRepository repository;
   final SolicitudRemoteDataSource remote;
   final Stream<List<ConnectivityResult>>? cambiosConectividad;
+  final SolicitudSeguimientoRemoteDataSource? seguimiento;
+  final String? Function()? uidActual;
 
   final Map<String, Future<ResumenSync>> _enCurso = {};
   final Map<String, Future<void>> _bloqueosPorSolicitud = {};
@@ -71,6 +76,36 @@ class SyncService {
         .where((conectado) => conectado);
   }
 
+  bool _sesionVigente(String ownerUid) {
+    final actual = uidActual?.call();
+    return actual == null || actual == ownerUid;
+  }
+
+  StreamSubscription<void> escucharCambiosRemotos(String ownerUid) {
+    final fuente = seguimiento;
+    if (fuente == null) return const Stream<void>.empty().listen(null);
+    return fuente
+        .observarDelSolicitante(ownerUid)
+        .asyncMap((remotas) => _aplicarRemotas(ownerUid, remotas))
+        .listen(null, onError: (Object _) {});
+  }
+
+  Future<int> _aplicarRemotas(
+    String ownerUid,
+    List<SolicitudRemota> remotas,
+  ) async {
+    var aplicadas = 0;
+    for (final remota in remotas) {
+      if (!_sesionVigente(ownerUid)) break;
+      final cambio = await ejecutarExclusivo(
+        remota.id,
+        () => repository.aplicarRemota(ownerUid: ownerUid, remota: remota),
+      );
+      if (cambio) aplicadas++;
+    }
+    return aplicadas;
+  }
+
   Future<ResumenSync> sincronizar(String ownerUid) {
     return _enCurso[ownerUid] ??= _sincronizar(ownerUid).whenComplete(() {
       _enCurso.remove(ownerUid);
@@ -86,6 +121,7 @@ class SyncService {
     for (final item in pendientes) {
       final solicitud = item.solicitud;
       if (solicitud.solicitanteUid != ownerUid) continue;
+      if (!_sesionVigente(ownerUid)) break;
 
       await ejecutarExclusivo(solicitud.id, () async {
         if (!await repository.siguePendienteDeEnvio(

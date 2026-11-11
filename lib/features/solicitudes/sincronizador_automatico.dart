@@ -24,6 +24,7 @@ class _SincronizadorAutomaticoState extends State<SincronizadorAutomatico>
     with WidgetsBindingObserver {
   late final SyncService _sync;
   StreamSubscription<void>? _conexion;
+  StreamSubscription<void>? _remotos;
 
   @override
   void initState() {
@@ -34,6 +35,7 @@ class _SincronizadorAutomaticoState extends State<SincronizadorAutomatico>
       (_) => _sincronizar(),
       onError: (Object _) {},
     );
+    _remotos = _sync.escucharCambiosRemotos(widget.ownerUid);
     _sincronizar();
   }
 
@@ -52,6 +54,7 @@ class _SincronizadorAutomaticoState extends State<SincronizadorAutomatico>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _conexion?.cancel();
+    _remotos?.cancel();
     super.dispose();
   }
 

@@ -9,6 +9,7 @@ import '../../domain/models/rol.dart';
 import '../../domain/models/solicitud.dart';
 import '../local/app_database.dart';
 import '../remote/solicitud_cancelacion_remote_data_source.dart';
+import '../remote/solicitud_seguimiento_remote_data_source.dart';
 
 class MiSolicitud {
   const MiSolicitud({required this.solicitud, required this.equipoNombre});
@@ -23,8 +24,8 @@ class SolicitudRepository {
     this.cancelacionRemote,
     Uuid? uuid,
     DateTime Function()? reloj,
-  })  : _uuid = uuid ?? const Uuid(),
-        _reloj = reloj ?? DateTime.now;
+  }) : _uuid = uuid ?? const Uuid(),
+       _reloj = reloj ?? DateTime.now;
 
   final AppDatabase db;
   final SolicitudCancelacionRemoteDataSource? cancelacionRemote;
@@ -115,7 +116,10 @@ class SolicitudRepository {
     );
   }
 
-  Future<bool> descartarRechazada({required String id, required String ownerUid}) async {
+  Future<bool> descartarRechazada({
+    required String id,
+    required String ownerUid,
+  }) async {
     final borradas = await db.eliminarSolicitud(
       id: id,
       ownerUid: ownerUid,
@@ -176,6 +180,65 @@ class SolicitudRepository {
       ),
     );
     return existeEnServidor;
+  }
+
+  Future<bool> aplicarRemota({
+    required String ownerUid,
+    required SolicitudRemota remota,
+  }) async {
+    if (remota.solicitanteUid != ownerUid) return false;
+
+    final fila = await db.buscarSolicitud(remota.id);
+    if (fila == null) {
+      await db.guardarSolicitud(
+        SolicitudesCompanion.insert(
+          id: remota.id,
+          ownerUid: ownerUid,
+          equipoId: remota.equipoId,
+          equipoNombre: remota.equipoNombre,
+          fecha: remota.fecha,
+          slot: remota.slot.codigo,
+          estado: remota.estado.valor,
+          version: Value(remota.version),
+          estadoSync: EstadoSync.sincronizado.valor,
+          observacionEntrega: Value(remota.observacionEntrega),
+          observacionDevolucion: Value(remota.observacionDevolucion),
+          motivoRechazo: Value(remota.motivoRechazo),
+          creadaEn: remota.creadaEn,
+          actualizadaEn: remota.actualizadaEn,
+        ),
+      );
+      return true;
+    }
+
+    if (fila.ownerUid != ownerUid) return false;
+
+    final sincronizada = fila.estadoSync == EstadoSync.sincronizado.valor;
+    if (!sincronizada && fila.version > remota.version) return false;
+
+    final sinCambios =
+        sincronizada &&
+        fila.estado == remota.estado.valor &&
+        fila.version == remota.version &&
+        fila.observacionEntrega == remota.observacionEntrega &&
+        fila.observacionDevolucion == remota.observacionDevolucion &&
+        fila.motivoRechazo == remota.motivoRechazo;
+    if (sinCambios) return false;
+
+    await db.actualizarSolicitud(
+      remota.id,
+      SolicitudesCompanion(
+        estado: Value(remota.estado.valor),
+        version: Value(remota.version),
+        estadoSync: Value(EstadoSync.sincronizado.valor),
+        ultimoError: const Value(null),
+        observacionEntrega: Value(remota.observacionEntrega),
+        observacionDevolucion: Value(remota.observacionDevolucion),
+        motivoRechazo: Value(remota.motivoRechazo),
+        actualizadaEn: Value(remota.actualizadaEn),
+      ),
+    );
+    return true;
   }
 
   Future<MiSolicitud> crearSolicitud({
