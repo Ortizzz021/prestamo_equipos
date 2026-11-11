@@ -8,9 +8,11 @@ import 'data/local/app_database.dart';
 import 'data/remote/equipo_api_service.dart';
 import 'data/remote/disponibilidad_remote_data_source.dart';
 import 'data/remote/coordinacion_remote_data_source.dart';
+import 'data/remote/bodega_remote_data_source.dart';
 import 'data/remote/solicitud_remote_data_source.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/coordinacion_repository.dart';
+import 'data/repositories/bodega_repository.dart';
 import 'data/repositories/disponibilidad_repository.dart';
 import 'data/repositories/equipo_repository.dart';
 import 'data/repositories/solicitud_repository.dart';
@@ -28,6 +30,7 @@ class PrestamoEquiposApp extends StatelessWidget {
     this.syncService,
     this.disponibilidadRepository,
     this.coordinacionRepository,
+    this.bodegaRepository,
   });
 
   final AuthRepository authRepository;
@@ -37,6 +40,7 @@ class PrestamoEquiposApp extends StatelessWidget {
   final SyncService? syncService;
   final DisponibilidadRepository? disponibilidadRepository;
   final CoordinacionRepository? coordinacionRepository;
+  final BodegaRepository? bodegaRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -64,6 +68,15 @@ class PrestamoEquiposApp extends StatelessWidget {
               coordinacionRepository ??
               CoordinacionRepository(
                 remote: CoordinacionRemoteDataSource(
+                  firestore: FirebaseFirestore.instance,
+                ),
+              ),
+        ),
+        Provider<BodegaRepository>(
+          create: (_) =>
+              bodegaRepository ??
+              BodegaRepository(
+                remote: BodegaRemoteDataSource(
                   firestore: FirebaseFirestore.instance,
                 ),
               ),
