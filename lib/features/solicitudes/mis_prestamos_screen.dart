@@ -260,6 +260,14 @@ class _TarjetaSolicitud extends StatelessWidget {
                 _EtiquetaSync(estadoSync: s.estadoSync, estado: s.estado),
               ],
             ),
+            if (s.estado == EstadoSolicitud.rechazado &&
+                (s.motivoRechazo?.trim().isNotEmpty ?? false)) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Motivo del rechazo: ${s.motivoRechazo!.trim()}',
+                style: textos.bodyMedium,
+              ),
+            ],
             if (s.ultimoError != null) ...[
               const SizedBox(height: 6),
               Text(

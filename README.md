@@ -121,13 +121,16 @@ Tabla `solicitudes` con los datos de la solicitud y además `ownerUid`, `version
 
 ## Reglas de seguridad
 
-Están en `firestore.rules` y se explican en `docs/reglas_firestore.md`. En resumen:
+Están en `firestore.rules`. En resumen:
 
 - Solo usuarios autenticados acceden a los datos y el rol se lee de `users/{uid}`.
 - El solicitante solo crea solicitudes propias en estado `SOLICITADO`, solo lee las suyas y solo puede cancelarlas.
 - El coordinador aprueba o rechaza solicitudes de otras personas y administra el bloqueo de equipos.
 - Bodega solo registra entrega (desde `APROBADO`) y devolución (desde `ENTREGADO`).
 - Cada cambio limita los campos que se pueden tocar, exige la marca de tiempo del servidor y aumenta `version`. No se permite borrar solicitudes ni perfiles.
+- `franjas` solo la crea el coordinador en la misma transacción que aprueba, y solo la borran bodega al registrar la devolución o el dueño al cancelar una solicitud aprobada.
+
+Las reglas se verificaron en el emulador de Firestore con las mismas operaciones que hace la app (registro, envío y reenvío, bandejas, aprobación, rechazo, cancelación, entrega, devolución y bloqueo) y con casos que deben negarse, como un solicitante cambiando su rol o leyendo solicitudes ajenas.
 
 ## Estrategia local-first
 
@@ -145,7 +148,7 @@ Están en `firestore.rules` y se explican en `docs/reglas_firestore.md`. En resu
 - Se reportan errores fatales, excepciones no controladas, fallas de red y errores inesperados. Las validaciones de negocio no se reportan.
 - Se envía el tipo de error y la traza, no el mensaje. El usuario se identifica solo por su UID de Firebase; no se envían nombre, correo ni contraseña, y los textos de log se limpian de correos y tokens.
 - Claves personalizadas: `app_version` y `build_mode`.
-- Evidencia y procedimiento: `docs/crashlytics.md`.
+- Configuración, procedimiento y evidencia: [`docs/crashlytics.md`](docs/crashlytics.md).
 
 ## Generar y firmar el APK
 
@@ -176,14 +179,60 @@ El APK queda en `build/app/outputs/flutter-apk/app-release.apk`. Si `key.propert
 
 ## Documentación de calidad
 
-| Documento | Contenido |
+| Documento | Ruta |
 | --- | --- |
-| `docs/matriz_qa.md` | Casos de prueba manuales con resultado y evidencia |
-| `docs/defectos.md` | Registro de defectos encontrados y su corrección |
-| `docs/checklist_release.md` | Lista de verificación antes de entregar el APK |
-| `docs/datos_prueba.md` | Cuentas por rol, catálogo y operaciones de prueba |
-| `docs/reglas_firestore.md` | Decisiones y verificación de reglas de seguridad |
-| `docs/crashlytics.md` | Configuración y evidencia de Crashlytics |
+| Matriz de QA manual (28 casos ejecutados con resultado y evidencia) | [`docs/matriz_qa.md`](docs/matriz_qa.md) |
+| Configuración y evidencia de Crashlytics | [`docs/crashlytics.md`](docs/crashlytics.md) |
+| Capturas de las pruebas, nombradas con el ID de cada caso | [`docs/evidencias/`](docs/evidencias) |
+
+## Datos de prueba
+
+**Cuentas por rol.** Hay al menos una cuenta por rol en Firebase Authentication; las contraseñas se entregan aparte y no están en el repositorio.
+
+| Rol | Cuenta | Uso en QA |
+| --- | --- | --- |
+| Solicitante | Solicitante Uno | Catálogo, solicitudes, sincronización y cancelaciones |
+| Solicitante | Solicitante2 | Registro duplicado (QA-02.2) |
+| Coordinador | Coordinador | Aprobación, rechazo y bloqueo |
+| Encargado de bodega | Bodega | Entrega y devolución |
+
+**Registros HTTP.** El catálogo `api/equipos.json` tiene 10 equipos en 5 categorías (Portátiles, Tablets, Proyectores, Cámaras y Audio).
+
+**Operaciones en distintos estados** (ejecutadas durante la QA):
+
+| Equipo | Franja | Estado | Caso |
+| --- | --- | --- | --- |
+| Cámara Canon EOS Rebel T7 | sáb 14 nov, 16:00-18:00 | Solicitado → Aprobado → Entregado → Devuelto | QA-07, QA-11, QA-15, QA-16 |
+| iPad 10.ª generación | lun 16 nov, 14:00-16:00 | Solicitado sin conexión → Sincronizado → Rechazado | QA-08.1, QA-08.2, QA-12.2 |
+| Portátil Dell Latitude 5440 | dom 15 nov, 10:00-12:00 | Solicitado → Cancelado | QA-10.1 |
+| Micrófono Blue Yeti | vie 13 nov, 10:00-12:00 | Aprobado → Cancelado | QA-10.2 |
+| Audífonos Sony WH-CH720N | — | Equipo bloqueado | QA-14.1 |
+
+## Registro de defectos
+
+| ID | Defecto | Severidad | Corrección | Estado |
+| --- | --- | --- | --- | --- |
+| DEF-01 | La app abría en blanco en Chrome | Media | Crashlytics se inicializa solo fuera de web; la app se orienta a Android | Cerrado |
+| DEF-02 | Un error al leer el perfil en el inicio de sesión no mostraba el mensaje amigable | Baja | Se agregó el `await` que faltaba en `iniciarSesion` | Cerrado |
+| DEF-03 | La regla de lectura de `solicitudes` podía negar la consulta del solicitante | Media | Se reemplazó `exists()` por `resource == null` y se verificó en el emulador | Cerrado |
+| DEF-04 | Las bandejas de coordinador y bodega no cargaban | Alta | Índice compuesto `estado` + `creadaEn` en `firestore.indexes.json` | Cerrado |
+| DEF-05 | Las solicitudes quedaban "Rechazado por el servidor" por permisos | Alta | Venció el modo de prueba; se publicaron `firestore.rules` y las solicitudes se recuperaron con Reintentar | Cerrado |
+| DEF-06 | Cerrar sesión no regresaba al login | Alta | El flujo del perfil usaba `asyncExpand`, que nunca recibía el cierre de sesión; ahora cancela el listener al cambiar la sesión | Cerrado |
+| DEF-07 | Tras cerrar sesión podía aparecer "No fue posible cargar el perfil" | Baja | Se ignoran errores del perfil cuando ya no hay sesión | Cerrado |
+| DEF-08 | Pantalla roja `'_dependents.isEmpty'` al cerrar los diálogos de motivo u observación | Alta | Diálogo reutilizable `DialogoTexto`, que libera el campo de texto cuando ya se cerró | Cerrado |
+| DEF-09 | El solicitante no veía el motivo del rechazo (QA-12.2) | Media | La tarjeta de Mis préstamos muestra el motivo | Corregido, pendiente de verificar con QA-12.2 |
+
+## Checklist de release
+
+- [x] `flutter analyze` sin problemas
+- [x] Versión `1.0.0+1` en `pubspec.yaml`
+- [x] Reglas de Firestore publicadas e índice compuesto creado
+- [x] Una cuenta por rol con su `rol` asignado
+- [x] Catálogo HTTP con 10 equipos disponible
+- [x] Crashlytics recibe eventos (QA-17)
+- [x] APK release firmado, instalado y probado (QA-18)
+- [x] Sin keystore, `key.properties` ni contraseñas en el repositorio
+- [ ] Casos pendientes de la matriz: QA-03.4, QA-12.1, QA-12.2 (repetición) y QA-14.2
 
 ## Límites conocidos
 

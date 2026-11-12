@@ -33,6 +33,6 @@ En las versiones release el botón no aparece y la pantalla no muestra contenido
 
 | Prueba | Fecha | Resultado | Captura |
 | --- | --- | --- | --- |
-| Error no fatal de prueba | | | `docs/evidencias/crashlytics_no_fatal.png` |
-| Cierre forzado | | | `docs/evidencias/crashlytics_fatal.png` |
-| Claves e identificador en el evento | | | `docs/evidencias/crashlytics_claves.png` |
+| Cierre forzado desde Diagnóstico | 2026-11-12 | En Crashlytics de `prestamo_equipos (android)` se registraron 5 fallas de 1 usuario | [QA-17.jpeg](evidencias/QA-17.jpeg) |
+
+El caso correspondiente en la matriz de QA es QA-17 (`docs/matriz_qa.md`).
